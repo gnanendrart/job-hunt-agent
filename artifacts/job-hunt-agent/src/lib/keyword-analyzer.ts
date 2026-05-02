@@ -72,6 +72,35 @@ const SKILL_PATTERNS: [string, RegExp][] = [
   ["API",                    /\bapi\b/i],
 ];
 
+export interface GapAnalysis {
+  gaps: KeywordFrequency[];
+  present: KeywordFrequency[];
+  coveragePct: number;
+}
+
+export function analyzeResumeGaps(
+  marketKeywords: KeywordFrequency[],
+  resumeText: string,
+): GapAnalysis {
+  const patternMap = new Map<string, RegExp>(SKILL_PATTERNS);
+  const gaps: KeywordFrequency[] = [];
+  const present: KeywordFrequency[] = [];
+
+  for (const kw of marketKeywords) {
+    const pattern = patternMap.get(kw.keyword);
+    if (!pattern) continue;
+    if (pattern.test(resumeText)) {
+      present.push(kw);
+    } else {
+      gaps.push(kw);
+    }
+  }
+
+  const total = gaps.length + present.length;
+  const coveragePct = total === 0 ? 0 : Math.round((present.length / total) * 100);
+  return { gaps, present, coveragePct };
+}
+
 export function analyzeKeywords(
   jobs: { description?: string | null }[],
   topN = 20,
