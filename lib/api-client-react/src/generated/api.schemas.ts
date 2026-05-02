@@ -94,6 +94,24 @@ export interface CoverLetterResult {
   cover_letter: string;
 }
 
+export interface InterviewPrepBody {
+  resumeText: string;
+  jobTitle: string;
+  company: string;
+  jobDescription: string;
+}
+
+export interface InterviewPrepQuestion {
+  question: string;
+  tip: string;
+}
+
+export interface InterviewPrepResult {
+  behavioral: InterviewPrepQuestion[];
+  technical: InterviewPrepQuestion[];
+  role_specific: InterviewPrepQuestion[];
+}
+
 export interface ValidateTokenBody {
   apifyToken: string;
 }

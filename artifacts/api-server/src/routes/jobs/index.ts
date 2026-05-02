@@ -7,6 +7,7 @@ import {
   FetchJobDescriptionBody,
   CoverLetterBody,
   ValidateTokenBody,
+  InterviewPrepBody,
 } from "@workspace/api-zod";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { createReadStream } from "fs";
@@ -305,6 +306,86 @@ router.post("/fetch-jd", async (req, res): Promise<void> => {
   } catch (err) {
     req.log.error({ err }, "Error in fetch-jd");
     res.json({ description: "" });
+  }
+});
+
+router.post("/interview-prep", async (req, res): Promise<void> => {
+  const parsed = InterviewPrepBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { resumeText, jobTitle, company, jobDescription } = parsed.data;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 3000,
+      messages: [
+        {
+          role: "user",
+          content: `You are an expert interview coach. Generate targeted interview questions for this candidate applying to this specific role.
+
+Job Title: ${jobTitle}
+Company: ${company}
+
+Job Description:
+${jobDescription.slice(0, 3000)}
+
+Candidate's Resume:
+${resumeText.slice(0, 3000)}
+
+Generate exactly 4 questions in each of the 3 categories below. For each question include a concise "tip" (2-3 sentences of practical coaching advice specific to this role and the candidate's background — what to highlight, what experience to draw from).
+
+Return ONLY a valid JSON object with this exact structure, no markdown, no commentary:
+{
+  "behavioral": [
+    { "question": "...", "tip": "..." },
+    ...4 items
+  ],
+  "technical": [
+    { "question": "...", "tip": "..." },
+    ...4 items
+  ],
+  "role_specific": [
+    { "question": "...", "tip": "..." },
+    ...4 items
+  ]
+}
+
+Guidelines:
+- behavioral: STAR-format questions about past situations (teamwork, conflict, failure, leadership)
+- technical: Skills and knowledge questions directly tied to the job description's requirements
+- role_specific: Questions about THIS company, industry, and the specific scope of this role
+- Make questions challenging but fair — what a real interviewer at ${company} would ask
+- Tips should reference the candidate's actual resume experience where relevant`,
+        },
+      ],
+    });
+
+    const block = message.content[0];
+    if (block.type !== "text") {
+      res.status(500).json({ error: "Invalid AI response" });
+      return;
+    }
+
+    let result;
+    try {
+      result = JSON.parse(block.text.trim());
+    } catch {
+      const match = block.text.match(/\{[\s\S]*\}/);
+      if (!match) {
+        res.status(500).json({ error: "Could not parse AI response as JSON" });
+        return;
+      }
+      result = JSON.parse(match[0]);
+    }
+
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "Error in interview-prep");
+    res.status(500).json({ error: "Failed to generate interview questions" });
   }
 });
 

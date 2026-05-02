@@ -14,6 +14,7 @@ import { KeywordAnalyzer } from "@/components/KeywordAnalyzer";
 import { ResumeGapAnalyzer } from "@/components/ResumeGapAnalyzer";
 import { CoverLetterPanel } from "@/components/CoverLetterPanel";
 import { EmailDigestPanel } from "@/components/EmailDigestPanel";
+import { InterviewPrepPanel } from "@/components/InterviewPrepPanel";
 import { useSearchHistory, formatRelativeTime } from "@/hooks/use-search-history";
 import { useBookmarks, type ApplicationStatus, STATUS_CONFIG } from "@/hooks/use-bookmarks";
 import { Progress } from "@/components/ui/progress";
@@ -105,6 +106,7 @@ export default function Home() {
   const [showToken, setShowToken] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobState | null>(null);
   const [coverLetterJob, setCoverLetterJob] = useState<JobState | null>(null);
+  const [interviewPrepJob, setInterviewPrepJob] = useState<JobState | null>(null);
   const [emailDigestOpen, setEmailDigestOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"search" | "saved">("search");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "all">("all");
@@ -457,6 +459,7 @@ export default function Home() {
                   isScoringAll={isScoringAll}
                   onOptimize={(job) => setSelectedJob(job)}
                   onCoverLetter={(job) => setCoverLetterJob(job)}
+                  onInterviewPrep={(job) => setInterviewPrepJob(job)}
                   isBookmarked={isBookmarked}
                   toggleBookmark={toggleBookmark}
                 />
@@ -687,6 +690,13 @@ export default function Home() {
         onClose={() => setEmailDigestOpen(false)}
         bookmarks={bookmarks}
         getStatus={getStatus}
+      />
+
+      <InterviewPrepPanel
+        job={interviewPrepJob}
+        isOpen={interviewPrepJob !== null}
+        onClose={() => setInterviewPrepJob(null)}
+        resumeText={resumeText}
       />
 
     </div>

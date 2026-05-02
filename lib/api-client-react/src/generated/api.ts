@@ -24,6 +24,8 @@ import type {
   FetchJdBody,
   FetchJdResult,
   HealthStatus,
+  InterviewPrepBody,
+  InterviewPrepResult,
   JobResult,
   OptimizeResumeBody,
   ResumeOptimizationResult,
@@ -574,6 +576,78 @@ export const getValidateTokenMutationOptions = <
   };
 
   return { mutationFn, ...mutationOptions };
+};
+
+/**
+ * @summary Generate interview prep questions for a job
+ */
+export const getInterviewPrepUrl = () => `/api/interview-prep`;
+
+export const interviewPrep = async (
+  body: InterviewPrepBody,
+  options?: RequestInit,
+): Promise<InterviewPrepResult> => {
+  return customFetch<InterviewPrepResult>(getInterviewPrepUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(body),
+  });
+};
+
+export const getInterviewPrepMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof interviewPrep>>,
+    TError,
+    { data: BodyType<InterviewPrepBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof interviewPrep>>,
+  TError,
+  { data: BodyType<InterviewPrepBody> },
+  TContext
+> => {
+  const mutationKey = ["interviewPrep"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof interviewPrep>>,
+    { data: BodyType<InterviewPrepBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+    return interviewPrep(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export const useInterviewPrep = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof interviewPrep>>,
+    TError,
+    { data: BodyType<InterviewPrepBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof interviewPrep>>,
+  TError,
+  { data: BodyType<InterviewPrepBody> },
+  TContext
+> => {
+  return useMutation(getInterviewPrepMutationOptions(options));
 };
 
 export const useValidateToken = <

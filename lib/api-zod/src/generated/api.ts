@@ -104,6 +104,27 @@ export const CoverLetterResponse = zod.object({
 });
 
 /**
+ * @summary Generate interview prep questions for a job
+ */
+export const InterviewPrepBody = zod.object({
+  resumeText: zod.string(),
+  jobTitle: zod.string(),
+  company: zod.string(),
+  jobDescription: zod.string(),
+});
+
+export const InterviewPrepQuestion = zod.object({
+  question: zod.string(),
+  tip: zod.string(),
+});
+
+export const InterviewPrepResponse = zod.object({
+  behavioral: zod.array(InterviewPrepQuestion),
+  technical: zod.array(InterviewPrepQuestion),
+  role_specific: zod.array(InterviewPrepQuestion),
+});
+
+/**
  * @summary Validate an Apify API token
  */
 export const ValidateTokenBody = zod.object({
