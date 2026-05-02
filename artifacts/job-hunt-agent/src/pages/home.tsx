@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Terminal, Search, Loader2, Eye, EyeOff, Bookmark, Trash2, ExternalLink, Sparkles, Download, SearchX, Clock, Globe, AlertCircle, X, History, RotateCcw, MapPin, CheckCircle2, XCircle, ShieldCheck } from "lucide-react";
+import { Terminal, Search, Loader2, Eye, EyeOff, Bookmark, Trash2, ExternalLink, Sparkles, Download, SearchX, Clock, Globe, AlertCircle, X, History, RotateCcw, MapPin, CheckCircle2, XCircle, ShieldCheck, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { useValidateToken } from "@workspace/api-client-react";
 import { KeywordAnalyzer } from "@/components/KeywordAnalyzer";
 import { ResumeGapAnalyzer } from "@/components/ResumeGapAnalyzer";
 import { CoverLetterPanel } from "@/components/CoverLetterPanel";
+import { EmailDigestPanel } from "@/components/EmailDigestPanel";
 import { useSearchHistory, formatRelativeTime } from "@/hooks/use-search-history";
 import { useBookmarks, type ApplicationStatus, STATUS_CONFIG } from "@/hooks/use-bookmarks";
 import { Progress } from "@/components/ui/progress";
@@ -104,6 +105,7 @@ export default function Home() {
   const [showToken, setShowToken] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobState | null>(null);
   const [coverLetterJob, setCoverLetterJob] = useState<JobState | null>(null);
+  const [emailDigestOpen, setEmailDigestOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"search" | "saved">("search");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "all">("all");
 
@@ -483,6 +485,15 @@ export default function Home() {
                     variant="outline"
                     size="sm"
                     className="gap-2"
+                    onClick={() => setEmailDigestOpen(true)}
+                  >
+                    <Mail className="h-4 w-4" />
+                    Email Digest
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
                     onClick={() => exportToCSV(bookmarks, getStatus)}
                   >
                     <Download className="h-4 w-4" />
@@ -669,6 +680,13 @@ export default function Home() {
         isOpen={coverLetterJob !== null}
         onClose={() => setCoverLetterJob(null)}
         resumeText={resumeText}
+      />
+
+      <EmailDigestPanel
+        isOpen={emailDigestOpen}
+        onClose={() => setEmailDigestOpen(false)}
+        bookmarks={bookmarks}
+        getStatus={getStatus}
       />
 
     </div>
