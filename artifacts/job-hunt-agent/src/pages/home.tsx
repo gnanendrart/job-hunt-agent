@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Terminal, Search, Loader2, Eye, EyeOff, Bookmark, Trash2, ExternalLink, Sparkles, Download } from "lucide-react";
+import { Terminal, Search, Loader2, Eye, EyeOff, Bookmark, Trash2, ExternalLink, Sparkles, Download, SearchX, Clock, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,6 +68,7 @@ export default function Home() {
     datePosted, setDatePosted,
     jobs,
     isSearching, searchStage,
+    searchAttempted,
     searchJobs, scoreAllJobs
   } = useJobSearch();
 
@@ -245,6 +246,45 @@ export default function Home() {
               )}
             </section>
 
+            {searchAttempted && !isSearching && jobs.length === 0 && (
+              <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex flex-col items-center justify-center py-20 text-center space-y-6 rounded-2xl border border-dashed border-border/60 bg-card/40">
+                  <div className="bg-muted/60 p-5 rounded-full">
+                    <SearchX className="h-10 w-10 text-muted-foreground/60" />
+                  </div>
+                  <div className="space-y-2 max-w-md">
+                    <p className="text-xl font-semibold">No jobs found</p>
+                    <p className="text-sm text-muted-foreground">
+                      Apify returned no results for your search. Try one of these fixes:
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg text-left">
+                    <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1.5">
+                      <div className="flex items-center gap-2 text-primary">
+                        <Clock className="h-4 w-4" />
+                        <span className="text-sm font-semibold">Widen the date</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Switch from "Last 24h" to "Last Week" or "Any Time"</p>
+                    </div>
+                    <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1.5">
+                      <div className="flex items-center gap-2 text-primary">
+                        <Search className="h-4 w-4" />
+                        <span className="text-sm font-semibold">Broaden the role</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Try a more general title like "Data Analyst" instead of "Senior Healthcare Data Analyst"</p>
+                    </div>
+                    <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1.5">
+                      <div className="flex items-center gap-2 text-primary">
+                        <Globe className="h-4 w-4" />
+                        <span className="text-sm font-semibold">Expand location</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Use a country or "Remote" instead of a specific city</p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
             {jobs.length > 0 && (
               <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
@@ -252,6 +292,7 @@ export default function Home() {
                     <Terminal className="h-5 w-5" />
                   </span>
                   Intelligence Report
+                  <Badge variant="secondary" className="ml-2 font-mono text-sm">{jobs.length} jobs</Badge>
                 </h2>
                 <ResultsTable
                   jobs={jobs}

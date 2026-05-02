@@ -21,6 +21,7 @@ export function useJobSearch() {
   const [jobs, setJobs] = useState<JobState[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchStage, setSearchStage] = useState("");
+  const [searchAttempted, setSearchAttempted] = useState(false);
 
   const searchMutation = useSearchJobs();
   const scoreMutation = useScoreAts();
@@ -40,6 +41,7 @@ export function useJobSearch() {
     if (!apifyToken || !roles || !location || !resumeText) return;
     
     setIsSearching(true);
+    setSearchAttempted(false);
     setSearchStage("Scraping LinkedIn...");
     setJobs([]);
 
@@ -56,6 +58,7 @@ export function useJobSearch() {
     } finally {
       setIsSearching(false);
       setSearchStage("");
+      setSearchAttempted(true);
     }
   };
 
@@ -116,6 +119,7 @@ export function useJobSearch() {
     datePosted, setDatePosted,
     jobs, setJobs,
     isSearching, searchStage,
+    searchAttempted,
     searchJobs, scoreAllJobs,
     scoreMutation
   };
