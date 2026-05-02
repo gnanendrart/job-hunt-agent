@@ -16,18 +16,6 @@ const __dirname = dirname(__filename);
 
 const router: IRouter = Router();
 
-function parseDateToRelative(dateStr: string): boolean {
-  if (!dateStr) return false;
-  const lower = dateStr.toLowerCase();
-  if (lower.includes("just now") || lower.includes("moment ago")) return true;
-  const hoursMatch = lower.match(/(\d+)\s*hour/);
-  if (hoursMatch) return parseInt(hoursMatch[1]) <= 24;
-  const minutesMatch = lower.match(/(\d+)\s*min/);
-  if (minutesMatch) return true;
-  if (lower.includes("1 day ago") || lower.includes("today") || lower.includes("yesterday")) return true;
-  return false;
-}
-
 function extractExperienceLevel(description: string, title: string): string | null {
   const text = (description + " " + title).toLowerCase();
   if (text.includes("director") || text.includes("vp ") || text.includes("vice president") || text.includes("head of")) return "Director";
@@ -61,10 +49,13 @@ router.post("/search-jobs", async (req, res): Promise<void> => {
     datePosted === "week" ? "&f_TPR=r604800" :
     "";
 
-  // Build one URL pair per role, then combine into a single Apify call
+  // LinkedIn search uses + for spaces, not %20
+  const liEncode = (s: string) => encodeURIComponent(s).replace(/%20/g, "+");
+
+  // Build one URL pair per role, combine into a single Apify call
   const urls = roleList.flatMap((role) => [
-    `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}&location=${encodeURIComponent(location)}${tprParam}&start=0`,
-    `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}&location=${encodeURIComponent(location)}${tprParam}&start=25`,
+    `https://www.linkedin.com/jobs/search/?keywords=${liEncode(role)}&location=${liEncode(location)}${tprParam}&start=0`,
+    `https://www.linkedin.com/jobs/search/?keywords=${liEncode(role)}&location=${liEncode(location)}${tprParam}&start=25`,
   ]);
 
   req.log.info({ roles: roleList, urlCount: urls.length }, "Calling Apify with combined URL list");
@@ -97,25 +88,19 @@ router.post("/search-jobs", async (req, res): Promise<void> => {
       return;
     }
 
-    const jobs = items
-      .filter((item) => {
-        if (datePosted !== "24h") return true;
-        const dateStr = String(item.postedAt ?? item.timeAgo ?? item.publishedAt ?? "");
-        return parseDateToRelative(dateStr);
-      })
-      .map((item, idx) => ({
-        id: String(item.id ?? item.jobId ?? `job-${idx}`),
-        title: String(item.title ?? item.jobTitle ?? ""),
-        company: String(item.companyName ?? item.company ?? ""),
-        location: String(item.location ?? ""),
-        url: String(item.link ?? item.jobUrl ?? item.url ?? ""),
-        postedAt: String(item.postedAt ?? item.timeAgo ?? item.publishedAt ?? ""),
-        description: String(item.description ?? item.jobDescription ?? ""),
-        experienceLevel: extractExperienceLevel(
-          String(item.description ?? item.jobDescription ?? ""),
-          String(item.title ?? item.jobTitle ?? "")
-        ),
-      }));
+    const jobs = items.map((item, idx) => ({
+      id: String(item.id ?? item.jobId ?? `job-${idx}`),
+      title: String(item.title ?? item.jobTitle ?? ""),
+      company: String(item.companyName ?? ""),
+      location: String(item.location ?? ""),
+      url: String(item.link ?? ""),
+      postedAt: String(item.postedAt ?? ""),
+      description: String(item.description ?? item.jobDescription ?? ""),
+      experienceLevel: extractExperienceLevel(
+        String(item.description ?? item.jobDescription ?? ""),
+        String(item.title ?? item.jobTitle ?? "")
+      ),
+    }));
 
     const uniqueJobs = deduplicateJobs(
       jobs as Array<{ url: string; id: string; [key: string]: unknown }>
