@@ -1,0 +1,52 @@
+[
+  {
+    "id": "cached-1",
+    "title": "Senior Software Engineer",
+    "company": "Stripe",
+    "location": "San Francisco, CA",
+    "url": "https://stripe.com/jobs/listing/senior-software-engineer/1234",
+    "postedAt": "2 hours ago",
+    "description": "We are looking for a Senior Software Engineer to join our payments infrastructure team. You will design and build scalable distributed systems that process billions of dollars in payments globally. Requirements: 5+ years of experience in software engineering, proficiency in Go or Java, experience with distributed systems, microservices, and cloud infrastructure (AWS/GCP). Strong understanding of REST APIs, SQL databases, and system design. Experience with Kubernetes and Docker is a plus.",
+    "experienceLevel": "Senior"
+  },
+  {
+    "id": "cached-2",
+    "title": "Frontend Engineer",
+    "company": "Figma",
+    "location": "San Francisco, CA",
+    "url": "https://figma.com/jobs/frontend-engineer/5678",
+    "postedAt": "5 hours ago",
+    "description": "Figma is looking for a Frontend Engineer to help build the next generation of our collaborative design platform. You'll work on complex rendering systems, real-time collaboration, and user interface components. Requirements: Strong proficiency in TypeScript and React, experience with WebGL or Canvas API, knowledge of browser performance optimization, and familiarity with design systems. 3+ years of frontend engineering experience required.",
+    "experienceLevel": "Mid"
+  },
+  {
+    "id": "cached-3",
+    "title": "Machine Learning Engineer",
+    "company": "Anthropic",
+    "location": "San Francisco, CA",
+    "url": "https://anthropic.com/careers/machine-learning-engineer",
+    "postedAt": "1 day ago",
+    "description": "Join Anthropic's team to work on cutting-edge AI safety research and deployment. As an ML Engineer, you'll implement and optimize large language model training pipelines, work on RLHF and constitutional AI techniques, and collaborate closely with research scientists. Requirements: MS or PhD in Computer Science or related field, experience with PyTorch or JAX, deep understanding of transformer architectures, experience with distributed GPU training, and Python expertise.",
+    "experienceLevel": "Senior"
+  },
+  {
+    "id": "cached-4",
+    "title": "Junior Backend Developer",
+    "company": "Linear",
+    "location": "Remote",
+    "url": "https://linear.app/careers/junior-backend",
+    "postedAt": "3 hours ago",
+    "description": "Linear is hiring a Junior Backend Developer to help scale our project management platform. You'll work on our Node.js API, PostgreSQL databases, and GraphQL layer. Requirements: 1-2 years of experience with Node.js or TypeScript, understanding of REST APIs and basic database design, experience with Git and collaborative development workflows. Familiarity with GraphQL is a plus. We value curiosity, attention to detail, and a passion for great developer tooling.",
+    "experienceLevel": "Entry"
+  },
+  {
+    "id": "cached-5",
+    "title": "Engineering Manager",
+    "company": "Notion",
+    "location": "New York, NY",
+    "url": "https://notion.so/careers/engineering-manager-12345",
+    "postedAt": "12 hours ago",
+    "description": "Notion is seeking an Engineering Manager to lead one of our core product engineering teams. You'll manage a team of 6-8 engineers, drive technical strategy for key product areas, and partner closely with product and design. Requirements: 8+ years of software engineering experience with at least 2 years in engineering management, track record of delivering complex products, strong technical depth in web technologies, and excellent communication skills. Experience scaling teams and managing distributed engineers preferred.",
+    "experienceLevel": "Director"
+  }
+]

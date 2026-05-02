@@ -5,18 +5,32 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  AtsScoreResult,
+  ErrorResponse,
+  FetchJdBody,
+  FetchJdResult,
+  HealthStatus,
+  JobResult,
+  OptimizeResumeBody,
+  ResumeOptimizationResult,
+  ScoreAtsBody,
+  SearchJobsBody,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +113,347 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Search LinkedIn jobs via Apify
+ */
+export const getSearchJobsUrl = () => {
+  return `/api/search-jobs`;
+};
+
+export const searchJobs = async (
+  searchJobsBody: SearchJobsBody,
+  options?: RequestInit,
+): Promise<JobResult[]> => {
+  return customFetch<JobResult[]>(getSearchJobsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(searchJobsBody),
+  });
+};
+
+export const getSearchJobsMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof searchJobs>>,
+    TError,
+    { data: BodyType<SearchJobsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof searchJobs>>,
+  TError,
+  { data: BodyType<SearchJobsBody> },
+  TContext
+> => {
+  const mutationKey = ["searchJobs"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof searchJobs>>,
+    { data: BodyType<SearchJobsBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return searchJobs(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SearchJobsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof searchJobs>>
+>;
+export type SearchJobsMutationBody = BodyType<SearchJobsBody>;
+export type SearchJobsMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Search LinkedIn jobs via Apify
+ */
+export const useSearchJobs = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof searchJobs>>,
+    TError,
+    { data: BodyType<SearchJobsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof searchJobs>>,
+  TError,
+  { data: BodyType<SearchJobsBody> },
+  TContext
+> => {
+  return useMutation(getSearchJobsMutationOptions(options));
+};
+
+/**
+ * @summary Score a job posting against a resume using Claude AI
+ */
+export const getScoreAtsUrl = () => {
+  return `/api/score-ats`;
+};
+
+export const scoreAts = async (
+  scoreAtsBody: ScoreAtsBody,
+  options?: RequestInit,
+): Promise<AtsScoreResult> => {
+  return customFetch<AtsScoreResult>(getScoreAtsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(scoreAtsBody),
+  });
+};
+
+export const getScoreAtsMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof scoreAts>>,
+    TError,
+    { data: BodyType<ScoreAtsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof scoreAts>>,
+  TError,
+  { data: BodyType<ScoreAtsBody> },
+  TContext
+> => {
+  const mutationKey = ["scoreAts"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof scoreAts>>,
+    { data: BodyType<ScoreAtsBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return scoreAts(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ScoreAtsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof scoreAts>>
+>;
+export type ScoreAtsMutationBody = BodyType<ScoreAtsBody>;
+export type ScoreAtsMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Score a job posting against a resume using Claude AI
+ */
+export const useScoreAts = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof scoreAts>>,
+    TError,
+    { data: BodyType<ScoreAtsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof scoreAts>>,
+  TError,
+  { data: BodyType<ScoreAtsBody> },
+  TContext
+> => {
+  return useMutation(getScoreAtsMutationOptions(options));
+};
+
+/**
+ * @summary Get full resume optimization report for a job
+ */
+export const getOptimizeResumeUrl = () => {
+  return `/api/optimize-resume`;
+};
+
+export const optimizeResume = async (
+  optimizeResumeBody: OptimizeResumeBody,
+  options?: RequestInit,
+): Promise<ResumeOptimizationResult> => {
+  return customFetch<ResumeOptimizationResult>(getOptimizeResumeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(optimizeResumeBody),
+  });
+};
+
+export const getOptimizeResumeMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof optimizeResume>>,
+    TError,
+    { data: BodyType<OptimizeResumeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof optimizeResume>>,
+  TError,
+  { data: BodyType<OptimizeResumeBody> },
+  TContext
+> => {
+  const mutationKey = ["optimizeResume"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof optimizeResume>>,
+    { data: BodyType<OptimizeResumeBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return optimizeResume(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type OptimizeResumeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof optimizeResume>>
+>;
+export type OptimizeResumeMutationBody = BodyType<OptimizeResumeBody>;
+export type OptimizeResumeMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get full resume optimization report for a job
+ */
+export const useOptimizeResume = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof optimizeResume>>,
+    TError,
+    { data: BodyType<OptimizeResumeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof optimizeResume>>,
+  TError,
+  { data: BodyType<OptimizeResumeBody> },
+  TContext
+> => {
+  return useMutation(getOptimizeResumeMutationOptions(options));
+};
+
+/**
+ * @summary Fetch full job description from a URL via Apify
+ */
+export const getFetchJobDescriptionUrl = () => {
+  return `/api/fetch-jd`;
+};
+
+export const fetchJobDescription = async (
+  fetchJdBody: FetchJdBody,
+  options?: RequestInit,
+): Promise<FetchJdResult> => {
+  return customFetch<FetchJdResult>(getFetchJobDescriptionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(fetchJdBody),
+  });
+};
+
+export const getFetchJobDescriptionMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof fetchJobDescription>>,
+    TError,
+    { data: BodyType<FetchJdBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof fetchJobDescription>>,
+  TError,
+  { data: BodyType<FetchJdBody> },
+  TContext
+> => {
+  const mutationKey = ["fetchJobDescription"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof fetchJobDescription>>,
+    { data: BodyType<FetchJdBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return fetchJobDescription(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type FetchJobDescriptionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof fetchJobDescription>>
+>;
+export type FetchJobDescriptionMutationBody = BodyType<FetchJdBody>;
+export type FetchJobDescriptionMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Fetch full job description from a URL via Apify
+ */
+export const useFetchJobDescription = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof fetchJobDescription>>,
+    TError,
+    { data: BodyType<FetchJdBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof fetchJobDescription>>,
+  TError,
+  { data: BodyType<FetchJdBody> },
+  TContext
+> => {
+  return useMutation(getFetchJobDescriptionMutationOptions(options));
+};

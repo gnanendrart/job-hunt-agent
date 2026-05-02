@@ -8,3 +8,75 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface ErrorResponse {
+  error: string;
+}
+
+export interface SearchJobsBody {
+  /** Comma-separated job titles to search */
+  roles: string;
+  /** Location to search jobs in */
+  location: string;
+  /** Apify API token */
+  apifyToken: string;
+}
+
+export interface JobResult {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  url: string;
+  postedAt: string;
+  description: string;
+  /** @nullable */
+  experienceLevel?: string | null;
+  /** @nullable */
+  ats_score?: number | null;
+  /** @nullable */
+  match_tier?: string | null;
+  top_missing_keywords?: string[];
+}
+
+export interface ScoreAtsBody {
+  resumeText: string;
+  jobTitle: string;
+  jobSnippet: string;
+}
+
+export interface AtsScoreResult {
+  ats_score: number;
+  match_tier: string;
+  top_missing_keywords: string[];
+}
+
+export interface OptimizeResumeBody {
+  resumeText: string;
+  jobDescription: string;
+  jobTitle?: string;
+}
+
+export interface AtsBreakdown {
+  skills_match: number;
+  experience_match: number;
+  title_match: number;
+}
+
+export interface ResumeOptimizationResult {
+  match_score: number;
+  ats_breakdown: AtsBreakdown;
+  top_3_changes: string[];
+  keywords_to_add: string[];
+  rewritten_headline: string;
+  rewritten_summary: string;
+}
+
+export interface FetchJdBody {
+  url: string;
+  apifyToken: string;
+}
+
+export interface FetchJdResult {
+  description: string;
+}

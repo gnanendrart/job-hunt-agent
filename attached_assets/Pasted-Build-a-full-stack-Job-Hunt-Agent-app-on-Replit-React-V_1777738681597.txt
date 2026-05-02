@@ -1,0 +1,24 @@
+Build a full-stack Job Hunt Agent app on Replit (React + Vite frontend, Express backend).
+
+What it does: User uploads a PDF resume, enters an Apify API token and target job roles + location. The app scrapes LinkedIn for jobs posted in the last 24 hours, scores each posting against the resume using Claude AI (ATS keyword matching), displays a filterable/sortable results table, and lets users get a full resume optimization report for any job.
+
+Frontend (React + Vite, dark SaaS design, deep navy/purple color scheme):
+- Input form with: Apify token field (saved to localStorage), job titles field (comma-separated, each role searched independently), location field, PDF resume dropzone (parsed client-side with pdfjs-dist, text never leaves the browser)
+- Loading state with progress text while scraping + scoring runs
+- Results table with columns: Job Title, Company, Location, ATS Score (colored badge -- green >=72, yellow 42-71, red <42), Experience Level (parsed from description), Date Posted, Apply link
+- Sort by any column, filter by experience level and minimum ATS score
+- "Optimize Resume" button on each row that opens a side panel showing: skills/experience/title match breakdown, top 3 resume changes, keywords to add, rewritten headline, rewritten professional summary
+- ATS scoring runs in batches of 5 jobs with a 1.5s delay between batches to avoid overwhelming the API
+
+Backend (Express on port 8080):
+- POST /api/search-jobs -- takes { roles, location, apifyToken }. Splits roles by comma, searches each independently in parallel using Apify actor curious_coder~linkedin-jobs-scraper. For each role, passes 2 LinkedIn search URLs (start=0 and start=25, f_TPR=r86400 for 24h only) to get up to 50 results. Maps item.link as the job URL (not applyUrl which is external). Filters out jobs older than 24h by parsing relative dates ("2 hours ago", "1 day ago"). Deduplicates by URL. Falls back to a local data/cached-jobs.json if Apify returns 0 results.
+- POST /api/score-ats -- takes { resumeText, jobTitle, jobSnippet }. Uses Replit's Anthropic AI integration (no user API key needed) with Claude. Prompt instructs Claude to identify the 10 most important keywords in the JD, count matches in the resume, and return a genuine varied score (not defaulting to a middle value). Returns { ats_score, match_tier, top_missing_keywords }.
+- POST /api/optimize-resume -- takes { resumeText, jobDescription }. Returns { match_score, ats_breakdown: { skills_match, experience_match, title_match }, top_3_changes, keywords_to_add, rewritten_headline, rewritten_summary }.
+- POST /api/fetch-jd -- fetches full job description from a URL using Apify actor apify~website-content-crawler.
+- All AI calls go through @workspace/integrations-anthropic-ai (Replit's managed Anthropic integration) -- no Anthropic key field in the UI.
+
+Misc:
+- The Apify token is the only credential the user provides
+- No salary filter should exclude jobs without salary info
+- Include a data/cached-jobs.json fallback with ~5 sample LinkedIn jobs for when Apify returns nothing
+- Name the project: job-hunt-agent

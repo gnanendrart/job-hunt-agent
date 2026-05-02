@@ -14,3 +14,76 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary Search LinkedIn jobs via Apify
+ */
+export const SearchJobsBody = zod.object({
+  roles: zod.string().describe("Comma-separated job titles to search"),
+  location: zod.string().describe("Location to search jobs in"),
+  apifyToken: zod.string().describe("Apify API token"),
+});
+
+export const SearchJobsResponseItem = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  company: zod.string(),
+  location: zod.string(),
+  url: zod.string(),
+  postedAt: zod.string(),
+  description: zod.string(),
+  experienceLevel: zod.string().nullish(),
+  ats_score: zod.number().nullish(),
+  match_tier: zod.string().nullish(),
+  top_missing_keywords: zod.array(zod.string()).optional(),
+});
+export const SearchJobsResponse = zod.array(SearchJobsResponseItem);
+
+/**
+ * @summary Score a job posting against a resume using Claude AI
+ */
+export const ScoreAtsBody = zod.object({
+  resumeText: zod.string(),
+  jobTitle: zod.string(),
+  jobSnippet: zod.string(),
+});
+
+export const ScoreAtsResponse = zod.object({
+  ats_score: zod.number(),
+  match_tier: zod.string(),
+  top_missing_keywords: zod.array(zod.string()),
+});
+
+/**
+ * @summary Get full resume optimization report for a job
+ */
+export const OptimizeResumeBody = zod.object({
+  resumeText: zod.string(),
+  jobDescription: zod.string(),
+  jobTitle: zod.string().optional(),
+});
+
+export const OptimizeResumeResponse = zod.object({
+  match_score: zod.number(),
+  ats_breakdown: zod.object({
+    skills_match: zod.number(),
+    experience_match: zod.number(),
+    title_match: zod.number(),
+  }),
+  top_3_changes: zod.array(zod.string()),
+  keywords_to_add: zod.array(zod.string()),
+  rewritten_headline: zod.string(),
+  rewritten_summary: zod.string(),
+});
+
+/**
+ * @summary Fetch full job description from a URL via Apify
+ */
+export const FetchJobDescriptionBody = zod.object({
+  url: zod.string(),
+  apifyToken: zod.string(),
+});
+
+export const FetchJobDescriptionResponse = zod.object({
+  description: zod.string(),
+});

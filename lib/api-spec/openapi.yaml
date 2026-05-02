@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: jobs
+    description: Job search and scoring operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,133 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /search-jobs:
+    post:
+      operationId: searchJobs
+      tags: [jobs]
+      summary: Search LinkedIn jobs via Apify
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchJobsBody"
+      responses:
+        "200":
+          description: List of job results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /score-ats:
+    post:
+      operationId: scoreAts
+      tags: [jobs]
+      summary: Score a job posting against a resume using Claude AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreAtsBody"
+      responses:
+        "200":
+          description: ATS score result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AtsScoreResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /optimize-resume:
+    post:
+      operationId: optimizeResume
+      tags: [jobs]
+      summary: Get full resume optimization report for a job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OptimizeResumeBody"
+      responses:
+        "200":
+          description: Resume optimization report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeOptimizationResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /fetch-jd:
+    post:
+      operationId: fetchJobDescription
+      tags: [jobs]
+      summary: Fetch full job description from a URL via Apify
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FetchJdBody"
+      responses:
+        "200":
+          description: Full job description text
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FetchJdResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +163,166 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SearchJobsBody:
+      type: object
+      properties:
+        roles:
+          type: string
+          description: Comma-separated job titles to search
+        location:
+          type: string
+          description: Location to search jobs in
+        apifyToken:
+          type: string
+          description: Apify API token
+      required:
+        - roles
+        - location
+        - apifyToken
+
+    JobResult:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        company:
+          type: string
+        location:
+          type: string
+        url:
+          type: string
+        postedAt:
+          type: string
+        description:
+          type: string
+        experienceLevel:
+          type: ["string", "null"]
+        ats_score:
+          type: ["number", "null"]
+        match_tier:
+          type: ["string", "null"]
+        top_missing_keywords:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - title
+        - company
+        - location
+        - url
+        - postedAt
+        - description
+
+    ScoreAtsBody:
+      type: object
+      properties:
+        resumeText:
+          type: string
+        jobTitle:
+          type: string
+        jobSnippet:
+          type: string
+      required:
+        - resumeText
+        - jobTitle
+        - jobSnippet
+
+    AtsScoreResult:
+      type: object
+      properties:
+        ats_score:
+          type: number
+        match_tier:
+          type: string
+        top_missing_keywords:
+          type: array
+          items:
+            type: string
+      required:
+        - ats_score
+        - match_tier
+        - top_missing_keywords
+
+    OptimizeResumeBody:
+      type: object
+      properties:
+        resumeText:
+          type: string
+        jobDescription:
+          type: string
+        jobTitle:
+          type: string
+      required:
+        - resumeText
+        - jobDescription
+
+    AtsBreakdown:
+      type: object
+      properties:
+        skills_match:
+          type: number
+        experience_match:
+          type: number
+        title_match:
+          type: number
+      required:
+        - skills_match
+        - experience_match
+        - title_match
+
+    ResumeOptimizationResult:
+      type: object
+      properties:
+        match_score:
+          type: number
+        ats_breakdown:
+          $ref: "#/components/schemas/AtsBreakdown"
+        top_3_changes:
+          type: array
+          items:
+            type: string
+        keywords_to_add:
+          type: array
+          items:
+            type: string
+        rewritten_headline:
+          type: string
+        rewritten_summary:
+          type: string
+      required:
+        - match_score
+        - ats_breakdown
+        - top_3_changes
+        - keywords_to_add
+        - rewritten_headline
+        - rewritten_summary
+
+    FetchJdBody:
+      type: object
+      properties:
+        url:
+          type: string
+        apifyToken:
+          type: string
+      required:
+        - url
+        - apifyToken
+
+    FetchJdResult:
+      type: object
+      properties:
+        description:
+          type: string
+      required:
+        - description
