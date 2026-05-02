@@ -10,7 +10,6 @@ import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { createReadStream } from "fs";
 import { fileURLToPath } from "url";
 import { join, dirname } from "path";
-import { readFile } from "fs/promises";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -57,88 +56,70 @@ router.post("/search-jobs", async (req, res): Promise<void> => {
   const { roles, location, apifyToken } = parsed.data;
   const roleList = roles.split(",").map((r) => r.trim()).filter(Boolean);
 
+  // Build one URL pair per role, then combine into a single Apify call
+  const urls = roleList.flatMap((role) => [
+    `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}&location=${encodeURIComponent(location)}&f_TPR=r86400&start=0`,
+    `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}&location=${encodeURIComponent(location)}&f_TPR=r86400&start=25`,
+  ]);
+
+  req.log.info({ roles: roleList, urlCount: urls.length }, "Calling Apify with combined URL list");
+
   try {
-    const allJobs: Array<Record<string, unknown>> = [];
-
-    await Promise.all(
-      roleList.map(async (role) => {
-        const searchUrls = [
-          `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}&location=${encodeURIComponent(location)}&f_TPR=r86400&start=0`,
-          `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}&location=${encodeURIComponent(location)}&f_TPR=r86400&start=25`,
-        ];
-
-        try {
-          const response = await fetch("https://api.apify.com/v2/acts/curious_coder~linkedin-jobs-scraper/run-sync-get-dataset-items", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${apifyToken}`,
-            },
-            body: JSON.stringify({
-              startUrls: searchUrls.map((url) => ({ url })),
-              maxResults: 50,
-            }),
-          });
-
-          if (!response.ok) {
-            req.log.warn({ role, status: response.status }, "Apify request failed for role");
-            return;
-          }
-
-          const items = await response.json() as Array<Record<string, unknown>>;
-          if (Array.isArray(items)) {
-            allJobs.push(...items);
-          }
-        } catch (err) {
-          req.log.warn({ err, role }, "Failed to fetch jobs for role");
-        }
-      })
+    const response = await fetch(
+      "https://api.apify.com/v2/acts/curious_coder~linkedin-jobs-scraper/run-sync-get-dataset-items",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apifyToken}`,
+        },
+        body: JSON.stringify({ urls, count: 50 }),
+      }
     );
 
-    let jobs: Array<Record<string, unknown>>;
-
-    if (allJobs.length === 0) {
-      req.log.info("No jobs from Apify, using cached fallback");
-      const cachedPath = join(process.cwd(), "src/data/cached-jobs.json");
-      const raw = await readFile(cachedPath, "utf-8");
-      jobs = JSON.parse(raw);
-    } else {
-      jobs = allJobs
-        .filter((item) => {
-          const dateStr = String(item.postedAt ?? item.timeAgo ?? item.publishedAt ?? "");
-          return parseDateToRelative(dateStr);
-        })
-        .map((item, idx) => ({
-          id: String(item.id ?? item.jobId ?? `job-${idx}`),
-          title: String(item.title ?? item.jobTitle ?? ""),
-          company: String(item.companyName ?? item.company ?? ""),
-          location: String(item.location ?? ""),
-          url: String(item.link ?? item.jobUrl ?? item.url ?? ""),
-          postedAt: String(item.postedAt ?? item.timeAgo ?? item.publishedAt ?? ""),
-          description: String(item.description ?? item.jobDescription ?? ""),
-          experienceLevel: extractExperienceLevel(
-            String(item.description ?? item.jobDescription ?? ""),
-            String(item.title ?? item.jobTitle ?? "")
-          ),
-        }));
+    if (!response.ok) {
+      const text = await response.text();
+      req.log.error({ status: response.status, body: text }, "Apify request failed");
+      res.status(502).json({ error: `Apify error ${response.status}: ${text.slice(0, 200)}` });
+      return;
     }
+
+    const items = await response.json() as Array<Record<string, unknown>>;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      req.log.info("Apify returned no jobs");
+      res.json([]);
+      return;
+    }
+
+    const jobs = items
+      .filter((item) => {
+        const dateStr = String(item.postedAt ?? item.timeAgo ?? item.publishedAt ?? "");
+        return parseDateToRelative(dateStr);
+      })
+      .map((item, idx) => ({
+        id: String(item.id ?? item.jobId ?? `job-${idx}`),
+        title: String(item.title ?? item.jobTitle ?? ""),
+        company: String(item.companyName ?? item.company ?? ""),
+        location: String(item.location ?? ""),
+        url: String(item.link ?? item.jobUrl ?? item.url ?? ""),
+        postedAt: String(item.postedAt ?? item.timeAgo ?? item.publishedAt ?? ""),
+        description: String(item.description ?? item.jobDescription ?? ""),
+        experienceLevel: extractExperienceLevel(
+          String(item.description ?? item.jobDescription ?? ""),
+          String(item.title ?? item.jobTitle ?? "")
+        ),
+      }));
 
     const uniqueJobs = deduplicateJobs(
       jobs as Array<{ url: string; id: string; [key: string]: unknown }>
     );
 
+    req.log.info({ total: items.length, afterFilter: uniqueJobs.length }, "Jobs fetched and filtered");
     res.json(uniqueJobs);
   } catch (err) {
     req.log.error({ err }, "Error in search-jobs");
-
-    try {
-      const cachedPath = join(process.cwd(), "src/data/cached-jobs.json");
-      const raw = await readFile(cachedPath, "utf-8");
-      const cached = JSON.parse(raw);
-      res.json(cached);
-    } catch {
-      res.status(500).json({ error: "Failed to fetch jobs" });
-    }
+    res.status(500).json({ error: "Failed to fetch jobs from Apify" });
   }
 });
 
