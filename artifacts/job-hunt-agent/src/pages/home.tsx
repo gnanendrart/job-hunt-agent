@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Terminal, Search, Loader2, Eye, EyeOff, Bookmark, Trash2, ExternalLink, Sparkles } from "lucide-react";
+import { Terminal, Search, Loader2, Eye, EyeOff, Bookmark, Trash2, ExternalLink, Sparkles, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,46 @@ import { useBookmarks } from "@/hooks/use-bookmarks";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+function exportToCSV(jobs: JobState[]) {
+  const headers = [
+    "Job Title",
+    "Company",
+    "Location",
+    "ATS Score",
+    "Match Tier",
+    "Experience Level",
+    "Posted Date",
+    "Missing Keywords",
+    "URL",
+  ];
+
+  const escape = (val: string | null | undefined) => {
+    const s = String(val ?? "");
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+
+  const rows = jobs.map((job) => [
+    escape(job.title),
+    escape(job.company),
+    escape(job.location),
+    escape(job.ats_score != null ? String(job.ats_score) : "Unscored"),
+    escape(job.match_tier),
+    escape(job.experienceLevel),
+    escape(new Date(job.postedAt).toLocaleDateString()),
+    escape((job.top_missing_keywords ?? []).join(", ")),
+    escape(job.url),
+  ]);
+
+  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `saved-jobs-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function Home() {
   const {
@@ -204,15 +244,26 @@ export default function Home() {
                 )}
               </h2>
               {bookmarks.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-destructive gap-2"
-                  onClick={clearBookmarks}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Clear all
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => exportToCSV(bookmarks)}
+                  >
+                    <Download className="h-4 w-4" />
+                    Export CSV
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive gap-2"
+                    onClick={clearBookmarks}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Clear all
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -238,6 +289,7 @@ export default function Home() {
                       <TableHead>Company</TableHead>
                       <TableHead>Location</TableHead>
                       <TableHead>ATS Score</TableHead>
+                      <TableHead>Missing Keywords</TableHead>
                       <TableHead>Level</TableHead>
                       <TableHead>Posted</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -253,6 +305,22 @@ export default function Home() {
                           <Badge className={getScoreColor(job.ats_score)} variant="secondary">
                             {job.ats_score != null ? `${job.ats_score}` : "Unscored"}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[200px]">
+                          {job.top_missing_keywords && job.top_missing_keywords.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {job.top_missing_keywords.slice(0, 3).map((kw, i) => (
+                                <Badge key={i} variant="outline" className="text-xs font-mono px-1.5 py-0">
+                                  {kw}
+                                </Badge>
+                              ))}
+                              {job.top_missing_keywords.length > 3 && (
+                                <span className="text-xs text-muted-foreground">+{job.top_missing_keywords.length - 3}</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           {job.experienceLevel ? (
@@ -282,7 +350,7 @@ export default function Home() {
                                 Apply <ExternalLink className="ml-1 h-3 w-3" />
                               </a>
                             </Button>
-                            <Button size="sm" onClick={() => { setSelectedJob(job); }}>
+                            <Button size="sm" onClick={() => setSelectedJob(job)}>
                               <Sparkles className="mr-1 h-3 w-3" /> Optimize
                             </Button>
                           </div>
