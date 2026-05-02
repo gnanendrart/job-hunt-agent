@@ -43,6 +43,7 @@ router.post("/search-jobs", async (req, res): Promise<void> => {
 
   const { roles, location, apifyToken, datePosted = "24h" } = parsed.data;
   const roleList = roles.split(",").map((r) => r.trim()).filter(Boolean);
+  const locationList = location.split(",").map((l) => l.trim()).filter(Boolean);
 
   const tprParam =
     datePosted === "24h" ? "&f_TPR=r86400" :
@@ -52,13 +53,15 @@ router.post("/search-jobs", async (req, res): Promise<void> => {
   // LinkedIn search uses + for spaces, not %20
   const liEncode = (s: string) => encodeURIComponent(s).replace(/%20/g, "+");
 
-  // Build one URL pair per role, combine into a single Apify call
-  const urls = roleList.flatMap((role) => [
-    `https://www.linkedin.com/jobs/search/?keywords=${liEncode(role)}&location=${liEncode(location)}${tprParam}&start=0`,
-    `https://www.linkedin.com/jobs/search/?keywords=${liEncode(role)}&location=${liEncode(location)}${tprParam}&start=25`,
-  ]);
+  // Build two URLs (start=0, start=25) for every role × location combination
+  const urls = roleList.flatMap((role) =>
+    locationList.flatMap((loc) => [
+      `https://www.linkedin.com/jobs/search/?keywords=${liEncode(role)}&location=${liEncode(loc)}${tprParam}&start=0`,
+      `https://www.linkedin.com/jobs/search/?keywords=${liEncode(role)}&location=${liEncode(loc)}${tprParam}&start=25`,
+    ])
+  );
 
-  req.log.info({ roles: roleList, urlCount: urls.length }, "Calling Apify with combined URL list");
+  req.log.info({ roles: roleList, locations: locationList, urlCount: urls.length }, "Calling Apify with combined URL list");
 
   try {
     const response = await fetch(

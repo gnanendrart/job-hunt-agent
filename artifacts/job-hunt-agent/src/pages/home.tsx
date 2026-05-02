@@ -164,7 +164,7 @@ export default function Home() {
                     <Label htmlFor="location">Location</Label>
                     <Input
                       id="location"
-                      placeholder="e.g. San Francisco, CA"
+                      placeholder="e.g. Remote, Calgary Alberta Canada"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       className="bg-background"
