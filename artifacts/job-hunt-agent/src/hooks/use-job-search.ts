@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { useSearchJobs, useScoreAts } from "@workspace/api-client-react";
-import type { JobResult } from "@workspace/api-client-react/src/generated/api.schemas";
+import { useSearchJobs, useScoreAts, useSalaryInsights } from "@workspace/api-client-react";
+import type { JobResult, SalaryInsight } from "@workspace/api-client-react/src/generated/api.schemas";
 
 export interface JobState extends JobResult {
   ats_score?: number | null;
   match_tier?: string | null;
   top_missing_keywords?: string[];
   isScoring?: boolean;
+  salary?: SalaryInsight | null;
+  isFetchingSalary?: boolean;
 }
 
 export type DatePosted = "24h" | "week" | "any";
@@ -23,9 +25,11 @@ export function useJobSearch() {
   const [searchStage, setSearchStage] = useState("");
   const [searchAttempted, setSearchAttempted] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [isSalaryingAll, setIsSalaryingAll] = useState(false);
 
   const searchMutation = useSearchJobs();
   const scoreMutation = useScoreAts();
+  const salaryMutation = useSalaryInsights();
 
   // Load apifyToken from localStorage on mount
   useEffect(() => {
@@ -117,6 +121,53 @@ export function useJobSearch() {
     }
   };
 
+  const getSalaryForJob = async (job: JobState) => {
+    if (job.salary || job.isFetchingSalary) return;
+    setJobs(prev => prev.map(j => j.id === job.id ? { ...j, isFetchingSalary: true } : j));
+    try {
+      const result = await salaryMutation.mutateAsync({
+        data: {
+          jobTitle: job.title,
+          company: job.company,
+          location: job.location,
+          experienceLevel: job.experienceLevel ?? undefined,
+        },
+      });
+      setJobs(prev => prev.map(j => j.id === job.id ? { ...j, salary: result, isFetchingSalary: false } : j));
+    } catch {
+      setJobs(prev => prev.map(j => j.id === job.id ? { ...j, isFetchingSalary: false } : j));
+    }
+  };
+
+  const salaryAllJobs = async () => {
+    if (isSalaryingAll || jobs.length === 0) return;
+    const unestimated = jobs.filter(j => !j.salary && !j.isFetchingSalary);
+    if (unestimated.length === 0) return;
+    setIsSalaryingAll(true);
+    setJobs(prev => prev.map(j => unestimated.find(u => u.id === j.id) ? { ...j, isFetchingSalary: true } : j));
+    const batchSize = 4;
+    for (let i = 0; i < unestimated.length; i += batchSize) {
+      const batch = unestimated.slice(i, i + batchSize);
+      await Promise.all(batch.map(async (job) => {
+        try {
+          const result = await salaryMutation.mutateAsync({
+            data: {
+              jobTitle: job.title,
+              company: job.company,
+              location: job.location,
+              experienceLevel: job.experienceLevel ?? undefined,
+            },
+          });
+          setJobs(prev => prev.map(j => j.id === job.id ? { ...j, salary: result, isFetchingSalary: false } : j));
+        } catch {
+          setJobs(prev => prev.map(j => j.id === job.id ? { ...j, isFetchingSalary: false } : j));
+        }
+      }));
+      if (i + batchSize < unestimated.length) await new Promise(r => setTimeout(r, 1000));
+    }
+    setIsSalaryingAll(false);
+  };
+
   return {
     apifyToken, setApifyToken,
     roles, setRoles,
@@ -127,6 +178,7 @@ export function useJobSearch() {
     isSearching, searchStage,
     searchAttempted, searchError,
     searchJobs, scoreAllJobs,
+    getSalaryForJob, salaryAllJobs, isSalaryingAll,
     scoreMutation
   };
 }

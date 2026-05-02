@@ -8,6 +8,7 @@ import {
   CoverLetterBody,
   ValidateTokenBody,
   InterviewPrepBody,
+  SalaryInsightsBody,
 } from "@workspace/api-zod";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { createReadStream } from "fs";
@@ -306,6 +307,74 @@ router.post("/fetch-jd", async (req, res): Promise<void> => {
   } catch (err) {
     req.log.error({ err }, "Error in fetch-jd");
     res.json({ description: "" });
+  }
+});
+
+router.post("/salary-insights", async (req, res): Promise<void> => {
+  const parsed = SalaryInsightsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { jobTitle, company, location, experienceLevel } = parsed.data;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 800,
+      messages: [
+        {
+          role: "user",
+          content: `You are a compensation data expert with deep knowledge of tech and professional salaries globally. Estimate a realistic salary range for this position.
+
+Job Title: ${jobTitle}
+Company: ${company}
+Location: ${location}${experienceLevel ? `\nExperience Level: ${experienceLevel}` : ""}
+
+Return ONLY a valid JSON object with no markdown, no commentary:
+{
+  "base_low": <integer annual base salary, lower bound>,
+  "base_high": <integer annual base salary, upper bound>,
+  "total_low": <integer total comp including bonus/equity lower bound>,
+  "total_high": <integer total comp including bonus/equity upper bound>,
+  "currency": "<3-letter ISO currency code for the location, e.g. USD, GBP, CAD, EUR, AUD>",
+  "confidence": "<high|medium|low>",
+  "notes": "<1-2 sentence explanation covering equity/bonus structure typical for this role/company, and what drives the range>"
+}
+
+Guidelines:
+- Use real-world market data knowledge for ${company} specifically if known (FAANG, startup, enterprise all differ)
+- Account for ${location} cost-of-living and local market (e.g. SF vs Austin vs London vs Remote)
+- confidence: "high" if role/company/location is well-known, "medium" if partially known, "low" if speculative
+- Total comp should realistically include typical annual bonus % and annualised equity for the seniority level
+- All numbers as plain integers (no commas, no symbols)`,
+        },
+      ],
+    });
+
+    const block = message.content[0];
+    if (block.type !== "text") {
+      res.status(500).json({ error: "Invalid AI response" });
+      return;
+    }
+
+    let result;
+    try {
+      result = JSON.parse(block.text.trim());
+    } catch {
+      const match = block.text.match(/\{[\s\S]*\}/);
+      if (!match) {
+        res.status(500).json({ error: "Could not parse salary response" });
+        return;
+      }
+      result = JSON.parse(match[0]);
+    }
+
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "Error in salary-insights");
+    res.status(500).json({ error: "Failed to estimate salary" });
   }
 });
 

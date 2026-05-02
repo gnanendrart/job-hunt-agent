@@ -29,6 +29,8 @@ import type {
   JobResult,
   OptimizeResumeBody,
   ResumeOptimizationResult,
+  SalaryInsight,
+  SalaryInsightsBody,
   ScoreAtsBody,
   SearchJobsBody,
   ValidateTokenBody,
@@ -576,6 +578,78 @@ export const getValidateTokenMutationOptions = <
   };
 
   return { mutationFn, ...mutationOptions };
+};
+
+/**
+ * @summary Estimate salary range for a job
+ */
+export const getSalaryInsightsUrl = () => `/api/salary-insights`;
+
+export const salaryInsights = async (
+  body: SalaryInsightsBody,
+  options?: RequestInit,
+): Promise<SalaryInsight> => {
+  return customFetch<SalaryInsight>(getSalaryInsightsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(body),
+  });
+};
+
+export const getSalaryInsightsMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof salaryInsights>>,
+    TError,
+    { data: BodyType<SalaryInsightsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof salaryInsights>>,
+  TError,
+  { data: BodyType<SalaryInsightsBody> },
+  TContext
+> => {
+  const mutationKey = ["salaryInsights"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof salaryInsights>>,
+    { data: BodyType<SalaryInsightsBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+    return salaryInsights(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export const useSalaryInsights = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof salaryInsights>>,
+    TError,
+    { data: BodyType<SalaryInsightsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof salaryInsights>>,
+  TError,
+  { data: BodyType<SalaryInsightsBody> },
+  TContext
+> => {
+  return useMutation(getSalaryInsightsMutationOptions(options));
 };
 
 /**

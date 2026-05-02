@@ -94,6 +94,23 @@ export interface CoverLetterResult {
   cover_letter: string;
 }
 
+export interface SalaryInsightsBody {
+  jobTitle: string;
+  company: string;
+  location: string;
+  experienceLevel?: string;
+}
+
+export interface SalaryInsight {
+  base_low: number;
+  base_high: number;
+  total_low: number;
+  total_high: number;
+  currency: string;
+  confidence: "high" | "medium" | "low";
+  notes: string;
+}
+
 export interface InterviewPrepBody {
   resumeText: string;
   jobTitle: string;

@@ -76,7 +76,8 @@ export default function Home() {
     jobs,
     isSearching, searchStage,
     searchAttempted, searchError,
-    searchJobs, scoreAllJobs
+    searchJobs, scoreAllJobs,
+    getSalaryForJob, salaryAllJobs, isSalaryingAll,
   } = useJobSearch();
 
   const { history, addToHistory, removeFromHistory } = useSearchHistory();
@@ -460,6 +461,9 @@ export default function Home() {
                   onOptimize={(job) => setSelectedJob(job)}
                   onCoverLetter={(job) => setCoverLetterJob(job)}
                   onInterviewPrep={(job) => setInterviewPrepJob(job)}
+                  onGetSalary={getSalaryForJob}
+                  onSalaryAll={salaryAllJobs}
+                  isSalaryingAll={isSalaryingAll}
                   isBookmarked={isBookmarked}
                   toggleBookmark={toggleBookmark}
                 />

@@ -104,6 +104,26 @@ export const CoverLetterResponse = zod.object({
 });
 
 /**
+ * @summary Estimate salary range for a job using Claude AI
+ */
+export const SalaryInsightsBody = zod.object({
+  jobTitle: zod.string(),
+  company: zod.string(),
+  location: zod.string(),
+  experienceLevel: zod.string().optional(),
+});
+
+export const SalaryInsightsResponse = zod.object({
+  base_low: zod.number(),
+  base_high: zod.number(),
+  total_low: zod.number(),
+  total_high: zod.number(),
+  currency: zod.string(),
+  confidence: zod.enum(["high", "medium", "low"]),
+  notes: zod.string(),
+});
+
+/**
  * @summary Generate interview prep questions for a job
  */
 export const InterviewPrepBody = zod.object({
