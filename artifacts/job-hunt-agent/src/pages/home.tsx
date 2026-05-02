@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Terminal, Search, Loader2, Eye, EyeOff, Bookmark, Trash2, ExternalLink, Sparkles, Download, SearchX, Clock, Globe, AlertCircle, X } from "lucide-react";
+import { Terminal, Search, Loader2, Eye, EyeOff, Bookmark, Trash2, ExternalLink, Sparkles, Download, SearchX, Clock, Globe, AlertCircle, X, History, RotateCcw, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { ResumeDropzone } from "@/components/ResumeDropzone";
 import { ResultsTable } from "@/components/ResultsTable";
 import { OptimizePanel } from "@/components/OptimizePanel";
 import { useJobSearch, type JobState, type DatePosted } from "@/hooks/use-job-search";
+import { useSearchHistory, formatRelativeTime } from "@/hooks/use-search-history";
 import { useBookmarks, type ApplicationStatus, STATUS_CONFIG } from "@/hooks/use-bookmarks";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -72,12 +73,26 @@ export default function Home() {
     searchJobs, scoreAllJobs
   } = useJobSearch();
 
+  const { history, addToHistory, removeFromHistory } = useSearchHistory();
   const { bookmarks, isBookmarked, toggleBookmark, getStatus, setStatus, clearBookmarks } = useBookmarks();
 
   const [showToken, setShowToken] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobState | null>(null);
   const [activeTab, setActiveTab] = useState<"search" | "saved">("search");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "all">("all");
+
+  const DATE_LABELS: Record<DatePosted, string> = { "24h": "Last 24h", week: "Last Week", any: "Any Time" };
+
+  const handleSearch = async () => {
+    const ok = await searchJobs();
+    if (ok) addToHistory({ roles, location, datePosted });
+  };
+
+  const rerunSearch = (entry: { roles: string; location: string; datePosted: DatePosted }) => {
+    setRoles(entry.roles);
+    setLocation(entry.location);
+    setDatePosted(entry.datePosted);
+  };
 
   const isScoringAll = jobs.some(j => j.isScoring);
   const isSearchDisabled = !apifyToken || !roles || !location || !resumeText || isSearching;
@@ -230,7 +245,7 @@ export default function Home() {
               <Button
                 size="lg"
                 className="w-full max-w-md text-base h-14 font-semibold shadow-lg hover:shadow-primary/25 transition-all"
-                onClick={searchJobs}
+                onClick={handleSearch}
                 disabled={isSearchDisabled}
               >
                 {isSearching ? (
@@ -245,6 +260,49 @@ export default function Home() {
                 </div>
               )}
             </section>
+
+            {history.length > 0 && !isSearching && (
+              <section className="animate-in fade-in duration-300 max-w-2xl mx-auto w-full">
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <History className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recent searches</span>
+                </div>
+                <div className="rounded-xl border border-border/50 bg-card divide-y divide-border/40 overflow-hidden">
+                  {history.map((entry) => (
+                    <div key={entry.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors group">
+                      <button
+                        className="flex-1 flex items-start gap-3 text-left min-w-0"
+                        onClick={() => rerunSearch(entry)}
+                        title="Restore this search"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5 mt-0.5 text-muted-foreground/50 group-hover:text-primary shrink-0 transition-colors" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{entry.roles}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <MapPin className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+                            <span className="text-xs text-muted-foreground truncate">{entry.location}</span>
+                            <span className="text-muted-foreground/40">·</span>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                              {DATE_LABELS[entry.datePosted]}
+                            </Badge>
+                          </div>
+                        </div>
+                        <span className="text-xs text-muted-foreground/60 shrink-0 self-center">
+                          {formatRelativeTime(entry.timestamp)}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => removeFromHistory(entry.id)}
+                        className="text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+                        aria-label="Remove"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {searchError && !isSearching && (
               <section className="animate-in fade-in slide-in-from-bottom-4 duration-300">

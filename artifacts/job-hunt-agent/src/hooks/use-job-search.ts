@@ -38,8 +38,8 @@ export function useJobSearch() {
     localStorage.setItem("apifyToken", apifyToken);
   }, [apifyToken]);
 
-  const searchJobs = async () => {
-    if (!apifyToken || !roles || !location || !resumeText) return;
+  const searchJobs = async (): Promise<boolean> => {
+    if (!apifyToken || !roles || !location || !resumeText) return false;
     
     setIsSearching(true);
     setSearchAttempted(false);
@@ -54,11 +54,13 @@ export function useJobSearch() {
       
       setSearchStage("Processing results...");
       setJobs(results as JobState[]);
+      return true;
       
     } catch (err) {
       const msg = err instanceof Error ? err.message : "An unexpected error occurred";
       setSearchError(msg);
       console.error(err);
+      return false;
     } finally {
       setIsSearching(false);
       setSearchStage("");
