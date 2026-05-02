@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ResumeDropzone } from "@/components/ResumeDropzone";
 import { ResultsTable } from "@/components/ResultsTable";
 import { OptimizePanel } from "@/components/OptimizePanel";
-import { useJobSearch, type JobState } from "@/hooks/use-job-search";
+import { useJobSearch, type JobState, type DatePosted } from "@/hooks/use-job-search";
 import { useBookmarks, type ApplicationStatus, STATUS_CONFIG } from "@/hooks/use-bookmarks";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -65,6 +65,7 @@ export default function Home() {
     roles, setRoles,
     location, setLocation,
     resumeText, setResumeText,
+    datePosted, setDatePosted,
     jobs,
     isSearching, searchStage,
     searchJobs, scoreAllJobs
@@ -168,6 +169,27 @@ export default function Home() {
                       className="bg-background"
                     />
                   </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Date Posted</Label>
+                    <div className="flex gap-2">
+                      {([ ["24h", "Last 24h"], ["week", "Last Week"], ["any", "Any Time"] ] as [DatePosted, string][]).map(([val, label]) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setDatePosted(val)}
+                          className={cn(
+                            "px-4 py-1.5 rounded-full text-sm font-medium border transition-all",
+                            datePosted === val
+                              ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                              : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+                          )}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="apifyToken">Apify API Token</Label>
                     <div className="relative">

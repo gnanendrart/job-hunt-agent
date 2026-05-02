@@ -9,11 +9,14 @@ export interface JobState extends JobResult {
   isScoring?: boolean;
 }
 
+export type DatePosted = "24h" | "week" | "any";
+
 export function useJobSearch() {
   const [apifyToken, setApifyToken] = useState("");
   const [roles, setRoles] = useState("");
   const [location, setLocation] = useState("");
   const [resumeText, setResumeText] = useState("");
+  const [datePosted, setDatePosted] = useState<DatePosted>("24h");
   
   const [jobs, setJobs] = useState<JobState[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -42,7 +45,7 @@ export function useJobSearch() {
 
     try {
       const results = await searchMutation.mutateAsync({
-        data: { roles, location, apifyToken }
+        data: { roles, location, apifyToken, datePosted }
       });
       
       setSearchStage("Processing results...");
@@ -110,6 +113,7 @@ export function useJobSearch() {
     roles, setRoles,
     location, setLocation,
     resumeText, setResumeText,
+    datePosted, setDatePosted,
     jobs, setJobs,
     isSearching, searchStage,
     searchJobs, scoreAllJobs,

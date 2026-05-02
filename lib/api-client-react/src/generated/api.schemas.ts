@@ -20,6 +20,8 @@ export interface SearchJobsBody {
   location: string;
   /** Apify API token */
   apifyToken: string;
+  /** Date posted filter */
+  datePosted?: '24h' | 'week' | 'any';
 }
 
 export interface JobResult {

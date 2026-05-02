@@ -22,6 +22,7 @@ export const SearchJobsBody = zod.object({
   roles: zod.string().describe("Comma-separated job titles to search"),
   location: zod.string().describe("Location to search jobs in"),
   apifyToken: zod.string().describe("Apify API token"),
+  datePosted: zod.enum(["24h", "week", "any"]).optional().default("24h"),
 });
 
 export const SearchJobsResponseItem = zod.object({

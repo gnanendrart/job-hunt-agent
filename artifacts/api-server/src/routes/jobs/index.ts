@@ -53,13 +53,18 @@ router.post("/search-jobs", async (req, res): Promise<void> => {
     return;
   }
 
-  const { roles, location, apifyToken } = parsed.data;
+  const { roles, location, apifyToken, datePosted = "24h" } = parsed.data;
   const roleList = roles.split(",").map((r) => r.trim()).filter(Boolean);
+
+  const tprParam =
+    datePosted === "24h" ? "&f_TPR=r86400" :
+    datePosted === "week" ? "&f_TPR=r604800" :
+    "";
 
   // Build one URL pair per role, then combine into a single Apify call
   const urls = roleList.flatMap((role) => [
-    `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}&location=${encodeURIComponent(location)}&f_TPR=r86400&start=0`,
-    `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}&location=${encodeURIComponent(location)}&f_TPR=r86400&start=25`,
+    `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}&location=${encodeURIComponent(location)}${tprParam}&start=0`,
+    `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}&location=${encodeURIComponent(location)}${tprParam}&start=25`,
   ]);
 
   req.log.info({ roles: roleList, urlCount: urls.length }, "Calling Apify with combined URL list");
@@ -94,6 +99,7 @@ router.post("/search-jobs", async (req, res): Promise<void> => {
 
     const jobs = items
       .filter((item) => {
+        if (datePosted !== "24h") return true;
         const dateStr = String(item.postedAt ?? item.timeAgo ?? item.publishedAt ?? "");
         return parseDateToRelative(dateStr);
       })
