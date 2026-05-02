@@ -9,6 +9,7 @@ import { ResumeDropzone } from "@/components/ResumeDropzone";
 import { ResultsTable } from "@/components/ResultsTable";
 import { OptimizePanel } from "@/components/OptimizePanel";
 import { useJobSearch, type JobState, type DatePosted } from "@/hooks/use-job-search";
+import { KeywordAnalyzer } from "@/components/KeywordAnalyzer";
 import { useSearchHistory, formatRelativeTime } from "@/hooks/use-search-history";
 import { useBookmarks, type ApplicationStatus, STATUS_CONFIG } from "@/hooks/use-bookmarks";
 import { Progress } from "@/components/ui/progress";
@@ -379,6 +380,9 @@ export default function Home() {
                   Intelligence Report
                   <Badge variant="secondary" className="ml-2 font-mono text-sm">{jobs.length} jobs</Badge>
                 </h2>
+                <div className="mb-6">
+                  <KeywordAnalyzer jobs={jobs} />
+                </div>
                 <ResultsTable
                   jobs={jobs}
                   onScoreAll={scoreAllJobs}
