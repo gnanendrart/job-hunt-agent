@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Terminal, Search, Loader2, Eye, EyeOff, Bookmark, Trash2, ExternalLink, Sparkles, Download, SearchX, Clock, Globe } from "lucide-react";
+import { Terminal, Search, Loader2, Eye, EyeOff, Bookmark, Trash2, ExternalLink, Sparkles, Download, SearchX, Clock, Globe, AlertCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,7 +68,7 @@ export default function Home() {
     datePosted, setDatePosted,
     jobs,
     isSearching, searchStage,
-    searchAttempted,
+    searchAttempted, searchError,
     searchJobs, scoreAllJobs
   } = useJobSearch();
 
@@ -246,7 +246,34 @@ export default function Home() {
               )}
             </section>
 
-            {searchAttempted && !isSearching && jobs.length === 0 && (
+            {searchError && !isSearching && (
+              <section className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-destructive">Search failed</p>
+                    <p className="text-xs text-destructive/80 mt-0.5 font-mono break-all">{searchError}</p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      <span className="font-medium">Common causes:</span>
+                      <span>Invalid or expired Apify token</span>
+                      <span>·</span>
+                      <span>Apify account out of credits</span>
+                      <span>·</span>
+                      <span>Actor timeout (try fewer roles)</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="text-muted-foreground hover:text-foreground shrink-0"
+                    aria-label="Dismiss"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {searchAttempted && !isSearching && !searchError && jobs.length === 0 && (
               <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex flex-col items-center justify-center py-20 text-center space-y-6 rounded-2xl border border-dashed border-border/60 bg-card/40">
                   <div className="bg-muted/60 p-5 rounded-full">

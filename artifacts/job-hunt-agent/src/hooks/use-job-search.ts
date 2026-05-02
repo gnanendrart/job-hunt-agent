@@ -22,6 +22,7 @@ export function useJobSearch() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchStage, setSearchStage] = useState("");
   const [searchAttempted, setSearchAttempted] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const searchMutation = useSearchJobs();
   const scoreMutation = useScoreAts();
@@ -42,6 +43,7 @@ export function useJobSearch() {
     
     setIsSearching(true);
     setSearchAttempted(false);
+    setSearchError(null);
     setSearchStage("Scraping LinkedIn...");
     setJobs([]);
 
@@ -54,6 +56,8 @@ export function useJobSearch() {
       setJobs(results as JobState[]);
       
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "An unexpected error occurred";
+      setSearchError(msg);
       console.error(err);
     } finally {
       setIsSearching(false);
@@ -119,7 +123,7 @@ export function useJobSearch() {
     datePosted, setDatePosted,
     jobs, setJobs,
     isSearching, searchStage,
-    searchAttempted,
+    searchAttempted, searchError,
     searchJobs, scoreAllJobs,
     scoreMutation
   };
