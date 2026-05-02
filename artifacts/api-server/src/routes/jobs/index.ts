@@ -5,6 +5,7 @@ import {
   ScoreAtsBody,
   OptimizeResumeBody,
   FetchJobDescriptionBody,
+  CoverLetterBody,
 } from "@workspace/api-zod";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { createReadStream } from "fs";
@@ -303,6 +304,59 @@ router.post("/fetch-jd", async (req, res): Promise<void> => {
   } catch (err) {
     req.log.error({ err }, "Error in fetch-jd");
     res.json({ description: "" });
+  }
+});
+
+router.post("/cover-letter", async (req, res): Promise<void> => {
+  const parsed = CoverLetterBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { resumeText, jobTitle, company, jobDescription } = parsed.data;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 2048,
+      messages: [
+        {
+          role: "user",
+          content: `You are an expert career coach and professional writer. Write a tailored, compelling cover letter for this job application.
+
+Job Title: ${jobTitle}
+Company: ${company}
+
+Job Description:
+${jobDescription.slice(0, 3000)}
+
+Candidate's Resume:
+${resumeText.slice(0, 3000)}
+
+Instructions:
+- Write a professional cover letter of 3-4 paragraphs (around 300-400 words)
+- Opening paragraph: Hook with genuine enthusiasm for this specific role and company; reference something specific from the job description
+- Middle paragraphs (1-2): Draw concrete connections between the candidate's actual experience from the resume and the role's key requirements; use specific achievements and skills from the resume
+- Closing paragraph: Clear call to action, express eagerness for an interview
+- Tone: Confident, warm, professional — not generic or overly formal
+- Do NOT use placeholder text like [Your Name] — write it as a ready-to-use letter starting with "Dear Hiring Manager,"
+- Do NOT include a signature block or date
+- Return ONLY the cover letter text, no commentary or explanation`,
+        },
+      ],
+    });
+
+    const block = message.content[0];
+    if (block.type !== "text") {
+      res.status(500).json({ error: "Invalid AI response" });
+      return;
+    }
+
+    res.json({ cover_letter: block.text.trim() });
+  } catch (err) {
+    req.log.error({ err }, "Error in cover-letter");
+    res.status(500).json({ error: "Failed to generate cover letter" });
   }
 });
 

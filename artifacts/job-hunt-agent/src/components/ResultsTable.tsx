@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ArrowUpDown, ExternalLink, Sparkles, Loader2, Bookmark, BookmarkCheck } from "lucide-react";
+import { ArrowUpDown, ExternalLink, Sparkles, Loader2, Bookmark, BookmarkCheck, FileText } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import type { JobState } from "@/hooks/use-job-search";
 interface ResultsTableProps {
   jobs: JobState[];
   onOptimize: (job: JobState) => void;
+  onCoverLetter: (job: JobState) => void;
   onScoreAll: () => void;
   isScoringAll: boolean;
   isBookmarked: (id: string) => boolean;
@@ -20,7 +21,7 @@ interface ResultsTableProps {
 
 type SortField = "title" | "company" | "location" | "ats_score" | "postedAt";
 
-export function ResultsTable({ jobs, onOptimize, onScoreAll, isScoringAll, isBookmarked, toggleBookmark }: ResultsTableProps) {
+export function ResultsTable({ jobs, onOptimize, onCoverLetter, onScoreAll, isScoringAll, isBookmarked, toggleBookmark }: ResultsTableProps) {
   const [sortField, setSortField] = useState<SortField>("ats_score");
   const [sortDesc, setSortDesc] = useState(true);
   
@@ -195,6 +196,9 @@ export function ResultsTable({ jobs, onOptimize, onScoreAll, isScoringAll, isBoo
                         <a href={job.url} target="_blank" rel="noopener noreferrer">
                           Apply <ExternalLink className="ml-1 h-3 w-3" />
                         </a>
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => onCoverLetter(job)}>
+                        <FileText className="mr-1 h-3 w-3" /> Cover Letter
                       </Button>
                       <Button size="sm" onClick={() => onOptimize(job)}>
                         <Sparkles className="mr-1 h-3 w-3" /> Optimize

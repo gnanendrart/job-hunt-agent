@@ -82,3 +82,14 @@ export interface FetchJdBody {
 export interface FetchJdResult {
   description: string;
 }
+
+export interface CoverLetterBody {
+  resumeText: string;
+  jobTitle: string;
+  company: string;
+  jobDescription: string;
+}
+
+export interface CoverLetterResult {
+  cover_letter: string;
+}

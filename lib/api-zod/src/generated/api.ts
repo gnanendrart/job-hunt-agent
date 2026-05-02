@@ -88,3 +88,17 @@ export const FetchJobDescriptionBody = zod.object({
 export const FetchJobDescriptionResponse = zod.object({
   description: zod.string(),
 });
+
+/**
+ * @summary Draft a tailored cover letter using Claude AI
+ */
+export const CoverLetterBody = zod.object({
+  resumeText: zod.string(),
+  jobTitle: zod.string(),
+  company: zod.string(),
+  jobDescription: zod.string(),
+});
+
+export const CoverLetterResponse = zod.object({
+  cover_letter: zod.string(),
+});

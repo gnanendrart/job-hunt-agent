@@ -18,6 +18,8 @@ import type {
 
 import type {
   AtsScoreResult,
+  CoverLetterBody,
+  CoverLetterResult,
   ErrorResponse,
   FetchJdBody,
   FetchJdResult,
@@ -456,4 +458,86 @@ export const useFetchJobDescription = <
   TContext
 > => {
   return useMutation(getFetchJobDescriptionMutationOptions(options));
+};
+
+/**
+ * @summary Draft a tailored cover letter using Claude AI
+ */
+export const getDraftCoverLetterUrl = () => {
+  return `/api/cover-letter`;
+};
+
+export const draftCoverLetter = async (
+  coverLetterBody: CoverLetterBody,
+  options?: RequestInit,
+): Promise<CoverLetterResult> => {
+  return customFetch<CoverLetterResult>(getDraftCoverLetterUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(coverLetterBody),
+  });
+};
+
+export const getDraftCoverLetterMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof draftCoverLetter>>,
+    TError,
+    { data: BodyType<CoverLetterBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof draftCoverLetter>>,
+  TError,
+  { data: BodyType<CoverLetterBody> },
+  TContext
+> => {
+  const mutationKey = ["draftCoverLetter"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof draftCoverLetter>>,
+    { data: BodyType<CoverLetterBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+    return draftCoverLetter(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DraftCoverLetterMutationResult = NonNullable<
+  Awaited<ReturnType<typeof draftCoverLetter>>
+>;
+export type DraftCoverLetterMutationBody = BodyType<CoverLetterBody>;
+export type DraftCoverLetterMutationError = ErrorType<ErrorResponse>;
+
+export const useDraftCoverLetter = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof draftCoverLetter>>,
+    TError,
+    { data: BodyType<CoverLetterBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof draftCoverLetter>>,
+  TError,
+  { data: BodyType<CoverLetterBody> },
+  TContext
+> => {
+  return useMutation(getDraftCoverLetterMutationOptions(options));
 };

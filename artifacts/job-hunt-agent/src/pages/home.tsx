@@ -11,6 +11,7 @@ import { OptimizePanel } from "@/components/OptimizePanel";
 import { useJobSearch, type JobState, type DatePosted } from "@/hooks/use-job-search";
 import { KeywordAnalyzer } from "@/components/KeywordAnalyzer";
 import { ResumeGapAnalyzer } from "@/components/ResumeGapAnalyzer";
+import { CoverLetterPanel } from "@/components/CoverLetterPanel";
 import { useSearchHistory, formatRelativeTime } from "@/hooks/use-search-history";
 import { useBookmarks, type ApplicationStatus, STATUS_CONFIG } from "@/hooks/use-bookmarks";
 import { Progress } from "@/components/ui/progress";
@@ -80,6 +81,7 @@ export default function Home() {
 
   const [showToken, setShowToken] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobState | null>(null);
+  const [coverLetterJob, setCoverLetterJob] = useState<JobState | null>(null);
   const [activeTab, setActiveTab] = useState<"search" | "saved">("search");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "all">("all");
 
@@ -392,6 +394,7 @@ export default function Home() {
                   onScoreAll={scoreAllJobs}
                   isScoringAll={isScoringAll}
                   onOptimize={(job) => setSelectedJob(job)}
+                  onCoverLetter={(job) => setCoverLetterJob(job)}
                   isBookmarked={isBookmarked}
                   toggleBookmark={toggleBookmark}
                 />
@@ -599,6 +602,13 @@ export default function Home() {
         onClose={() => setSelectedJob(null)}
         resumeText={resumeText}
         apifyToken={apifyToken}
+      />
+
+      <CoverLetterPanel
+        job={coverLetterJob}
+        isOpen={coverLetterJob !== null}
+        onClose={() => setCoverLetterJob(null)}
+        resumeText={resumeText}
       />
 
     </div>
