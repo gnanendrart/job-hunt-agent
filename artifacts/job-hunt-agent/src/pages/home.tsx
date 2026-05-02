@@ -78,6 +78,8 @@ export default function Home() {
     searchAttempted, searchError,
     searchJobs, scoreAllJobs,
     getSalaryForJob, salaryAllJobs, isSalaryingAll,
+    source, setSource,
+    country, setCountry,
   } = useJobSearch();
 
   const { history, addToHistory, removeFromHistory } = useSearchHistory();
@@ -192,7 +194,11 @@ export default function Home() {
                     <Search className="h-5 w-5 text-primary" />
                     Search Parameters
                   </h2>
-                  <p className="text-sm text-muted-foreground">Define your target roles and location to scrape LinkedIn.</p>
+                  <p className="text-sm text-muted-foreground">
+                    {source === "linkedin" && "Scrape job listings from LinkedIn via Apify."}
+                    {source === "indeed" && "Scrape job listings from Indeed via Apify."}
+                    {source === "both" && "Scrape LinkedIn and Indeed, then merge and deduplicate results."}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -217,6 +223,31 @@ export default function Home() {
                     />
                   </div>
                   <div className="space-y-2 md:col-span-2">
+                    <Label>Job Source</Label>
+                    <div className="flex gap-2">
+                      {([
+                        ["linkedin", "LinkedIn"],
+                        ["indeed",   "Indeed"],
+                        ["both",     "Both"],
+                      ] as ["linkedin"|"indeed"|"both", string][]).map(([val, label]) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setSource(val)}
+                          className={cn(
+                            "px-4 py-1.5 rounded-full text-sm font-medium border transition-all",
+                            source === val
+                              ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                              : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+                          )}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label>Date Posted</Label>
                     <div className="flex gap-2">
                       {([ ["24h", "Last 24h"], ["week", "Last Week"], ["any", "Any Time"] ] as [DatePosted, string][]).map(([val, label]) => (
@@ -236,6 +267,26 @@ export default function Home() {
                       ))}
                     </div>
                   </div>
+
+                  {(source === "indeed" || source === "both") && (
+                    <div className="space-y-2">
+                      <Label htmlFor="country">Indeed Country</Label>
+                      <Select value={country} onValueChange={setCountry}>
+                        <SelectTrigger id="country" className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="us">🇺🇸 United States</SelectItem>
+                          <SelectItem value="ca">🇨🇦 Canada</SelectItem>
+                          <SelectItem value="gb">🇬🇧 United Kingdom</SelectItem>
+                          <SelectItem value="au">🇦🇺 Australia</SelectItem>
+                          <SelectItem value="in">🇮🇳 India</SelectItem>
+                          <SelectItem value="de">🇩🇪 Germany</SelectItem>
+                          <SelectItem value="fr">🇫🇷 France</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="apifyToken">Apify API Token</Label>

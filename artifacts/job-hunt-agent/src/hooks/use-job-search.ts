@@ -19,6 +19,8 @@ export function useJobSearch() {
   const [location, setLocation] = useState("");
   const [resumeText, setResumeText] = useState("");
   const [datePosted, setDatePosted] = useState<DatePosted>("24h");
+  const [source, setSource] = useState<"linkedin" | "indeed" | "both">("linkedin");
+  const [country, setCountry] = useState("us");
   
   const [jobs, setJobs] = useState<JobState[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -48,12 +50,13 @@ export function useJobSearch() {
     setIsSearching(true);
     setSearchAttempted(false);
     setSearchError(null);
-    setSearchStage("Scraping LinkedIn...");
+    const sourceLabel = source === "both" ? "LinkedIn & Indeed" : source === "indeed" ? "Indeed" : "LinkedIn";
+    setSearchStage(`Scraping ${sourceLabel}...`);
     setJobs([]);
 
     try {
       const results = await searchMutation.mutateAsync({
-        data: { roles, location, apifyToken, datePosted }
+        data: { roles, location, apifyToken, datePosted, source, country }
       });
       
       setSearchStage("Processing results...");
@@ -174,6 +177,8 @@ export function useJobSearch() {
     location, setLocation,
     resumeText, setResumeText,
     datePosted, setDatePosted,
+    source, setSource,
+    country, setCountry,
     jobs, setJobs,
     isSearching, searchStage,
     searchAttempted, searchError,

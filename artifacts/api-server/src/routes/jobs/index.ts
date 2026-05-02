@@ -29,12 +29,139 @@ function extractExperienceLevel(description: string, title: string): string | nu
   return null;
 }
 
-function deduplicateJobs(jobs: Array<{ url: string; id: string; [key: string]: unknown }>) {
+function normalizeForDedup(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function deduplicateByTitleCompany<T extends { title: string; company: string }>(jobs: T[]): T[] {
   const seen = new Set<string>();
   return jobs.filter((job) => {
-    if (seen.has(job.url)) return false;
-    seen.add(job.url);
+    const key = `${normalizeForDedup(job.title)}||${normalizeForDedup(job.company)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
+  });
+}
+
+type NormalizedJob = {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  url: string;
+  postedAt: string;
+  description: string;
+  experienceLevel: string | null;
+  source: "linkedin" | "indeed";
+};
+
+async function scrapeLinkedIn(
+  roleList: string[],
+  locationList: string[],
+  apifyToken: string,
+  datePosted: string,
+  log: typeof logger
+): Promise<NormalizedJob[]> {
+  const tprParam =
+    datePosted === "24h" ? "&f_TPR=r86400" :
+    datePosted === "week" ? "&f_TPR=r604800" :
+    "";
+  const liEncode = (s: string) => encodeURIComponent(s).replace(/%20/g, "+");
+  const urls = roleList.flatMap((role) =>
+    locationList.flatMap((loc) => [
+      `https://www.linkedin.com/jobs/search/?keywords=${liEncode(role)}&location=${liEncode(loc)}${tprParam}&start=0`,
+      `https://www.linkedin.com/jobs/search/?keywords=${liEncode(role)}&location=${liEncode(loc)}${tprParam}&start=25`,
+    ])
+  );
+
+  log.info({ urlCount: urls.length }, "Calling LinkedIn Apify actor");
+
+  const response = await fetch(
+    "https://api.apify.com/v2/acts/curious_coder~linkedin-jobs-scraper/run-sync-get-dataset-items",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apifyToken}` },
+      body: JSON.stringify({ urls, count: 50 }),
+    }
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    log.error({ status: response.status, body: text }, "LinkedIn Apify request failed");
+    return [];
+  }
+
+  const items = await response.json() as Array<Record<string, unknown>>;
+  if (!Array.isArray(items)) return [];
+
+  return items.map((item, idx): NormalizedJob => ({
+    id: String(item.id ?? item.jobId ?? `li-${idx}`),
+    title: String(item.title ?? item.jobTitle ?? ""),
+    company: String(item.companyName ?? ""),
+    location: String(item.location ?? ""),
+    url: String(item.link ?? ""),
+    postedAt: String(item.postedAt ?? new Date().toISOString()),
+    description: String(item.description ?? item.jobDescription ?? ""),
+    experienceLevel: extractExperienceLevel(
+      String(item.description ?? item.jobDescription ?? ""),
+      String(item.title ?? item.jobTitle ?? "")
+    ),
+    source: "linkedin",
+  }));
+}
+
+async function scrapeIndeed(
+  roleList: string[],
+  locationList: string[],
+  apifyToken: string,
+  country: string,
+  log: typeof logger
+): Promise<NormalizedJob[]> {
+  log.info({ roleList, locationList, country }, "Calling Indeed Apify actor");
+
+  const response = await fetch(
+    "https://api.apify.com/v2/acts/misceres~indeed-scraper/run-sync-get-dataset-items",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apifyToken}` },
+      body: JSON.stringify({
+        country,
+        searchTerms: roleList,
+        location: locationList,
+        maxItems: 50,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    log.error({ status: response.status, body: text }, "Indeed Apify request failed");
+    return [];
+  }
+
+  const items = await response.json() as Array<Record<string, unknown>>;
+  if (!Array.isArray(items)) return [];
+
+  return items.map((item, idx): NormalizedJob => {
+    const rawDate = item.postingDateParsed ?? item.datePosted ?? item.postedAt;
+    let postedAt = new Date().toISOString();
+    if (rawDate) {
+      const d = new Date(String(rawDate));
+      if (!isNaN(d.getTime())) postedAt = d.toISOString();
+    }
+    const desc = String(item.description ?? item.descriptionHtml ?? item.jobDescription ?? "");
+    const title = String(item.positionName ?? item.title ?? item.jobTitle ?? "");
+    return {
+      id: String(item.id ?? item.jobId ?? `indeed-${idx}`),
+      title,
+      company: String(item.company ?? item.companyName ?? ""),
+      location: String(item.location ?? ""),
+      url: String(item.url ?? item.jobUrl ?? item.externalApplyLink ?? ""),
+      postedAt,
+      description: desc,
+      experienceLevel: extractExperienceLevel(desc, title),
+      source: "indeed",
+    };
   });
 }
 
@@ -45,79 +172,40 @@ router.post("/search-jobs", async (req, res): Promise<void> => {
     return;
   }
 
-  const { roles, location, apifyToken, datePosted = "24h" } = parsed.data;
+  const { roles, location, apifyToken, datePosted = "24h", source = "linkedin", country = "us" } = parsed.data;
   const roleList = roles.split(",").map((r) => r.trim()).filter(Boolean);
   const locationList = location.split(",").map((l) => l.trim()).filter(Boolean);
 
-  const tprParam =
-    datePosted === "24h" ? "&f_TPR=r86400" :
-    datePosted === "week" ? "&f_TPR=r604800" :
-    "";
-
-  // LinkedIn search uses + for spaces, not %20
-  const liEncode = (s: string) => encodeURIComponent(s).replace(/%20/g, "+");
-
-  // Build two URLs (start=0, start=25) for every role × location combination
-  const urls = roleList.flatMap((role) =>
-    locationList.flatMap((loc) => [
-      `https://www.linkedin.com/jobs/search/?keywords=${liEncode(role)}&location=${liEncode(loc)}${tprParam}&start=0`,
-      `https://www.linkedin.com/jobs/search/?keywords=${liEncode(role)}&location=${liEncode(loc)}${tprParam}&start=25`,
-    ])
-  );
-
-  req.log.info({ roles: roleList, locations: locationList, urlCount: urls.length }, "Calling Apify with combined URL list");
+  req.log.info({ roles: roleList, locations: locationList, source, country }, "Starting job search");
 
   try {
-    const response = await fetch(
-      "https://api.apify.com/v2/acts/curious_coder~linkedin-jobs-scraper/run-sync-get-dataset-items",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apifyToken}`,
-        },
-        body: JSON.stringify({ urls, count: 50 }),
-      }
-    );
+    let allJobs: NormalizedJob[] = [];
 
-    if (!response.ok) {
-      const text = await response.text();
-      req.log.error({ status: response.status, body: text }, "Apify request failed");
-      res.status(502).json({ error: `Apify error ${response.status}: ${text.slice(0, 200)}` });
-      return;
+    if (source === "linkedin" || source === "both") {
+      const liJobs = await scrapeLinkedIn(roleList, locationList, apifyToken, datePosted, req.log);
+      allJobs = [...allJobs, ...liJobs];
     }
 
-    const items = await response.json() as Array<Record<string, unknown>>;
+    if (source === "indeed" || source === "both") {
+      const indeedJobs = await scrapeIndeed(roleList, locationList, apifyToken, country, req.log);
+      allJobs = [...allJobs, ...indeedJobs];
+    }
 
-    if (!Array.isArray(items) || items.length === 0) {
-      req.log.info("Apify returned no jobs");
+    if (allJobs.length === 0) {
+      req.log.info("No jobs returned from any source");
       res.json([]);
       return;
     }
 
-    const jobs = items.map((item, idx) => ({
-      id: String(item.id ?? item.jobId ?? `job-${idx}`),
-      title: String(item.title ?? item.jobTitle ?? ""),
-      company: String(item.companyName ?? ""),
-      location: String(item.location ?? ""),
-      url: String(item.link ?? ""),
-      postedAt: String(item.postedAt ?? ""),
-      description: String(item.description ?? item.jobDescription ?? ""),
-      experienceLevel: extractExperienceLevel(
-        String(item.description ?? item.jobDescription ?? ""),
-        String(item.title ?? item.jobTitle ?? "")
-      ),
-    }));
+    // Filter out jobs with no title or URL, then dedup by title+company
+    const validJobs = allJobs.filter((j) => j.title && (j.url || source === "both"));
+    const uniqueJobs = deduplicateByTitleCompany(validJobs);
 
-    const uniqueJobs = deduplicateJobs(
-      jobs as Array<{ url: string; id: string; [key: string]: unknown }>
-    );
-
-    req.log.info({ total: items.length, afterFilter: uniqueJobs.length }, "Jobs fetched and filtered");
+    req.log.info({ total: allJobs.length, afterDedup: uniqueJobs.length }, "Jobs merged and deduplicated");
     res.json(uniqueJobs);
   } catch (err) {
     req.log.error({ err }, "Error in search-jobs");
-    res.status(500).json({ error: "Failed to fetch jobs from Apify" });
+    res.status(500).json({ error: "Failed to fetch jobs" });
   }
 });
 

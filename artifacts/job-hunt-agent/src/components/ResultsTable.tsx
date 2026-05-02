@@ -244,7 +244,21 @@ export function ResultsTable({
                       <TooltipContent>{isBookmarked(job.id) ? "Remove bookmark" : "Save job"}</TooltipContent>
                     </Tooltip>
                   </TableCell>
-                  <TableCell className="font-medium max-w-[260px] truncate" title={job.title}>{job.title}</TableCell>
+                  <TableCell className="font-medium max-w-[260px]" title={job.title}>
+                    <div className="flex items-center gap-1.5 truncate">
+                      {job.source && (
+                        <span className={cn(
+                          "shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded border",
+                          job.source === "linkedin"
+                            ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+                            : "bg-red-500/15 text-red-400 border-red-500/30"
+                        )}>
+                          {job.source === "linkedin" ? "LI" : "IN"}
+                        </span>
+                      )}
+                      <span className="truncate">{job.title}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>{job.company}</TableCell>
                   <TableCell>{job.location}</TableCell>
                   <TableCell>

@@ -23,6 +23,8 @@ export const SearchJobsBody = zod.object({
   location: zod.string().describe("Location to search jobs in"),
   apifyToken: zod.string().describe("Apify API token"),
   datePosted: zod.enum(["24h", "week", "any"]).optional().default("24h"),
+  source: zod.enum(["linkedin", "indeed", "both"]).optional().default("linkedin"),
+  country: zod.string().optional().default("us"),
 });
 
 export const SearchJobsResponseItem = zod.object({
@@ -37,6 +39,7 @@ export const SearchJobsResponseItem = zod.object({
   ats_score: zod.number().nullish(),
   match_tier: zod.string().nullish(),
   top_missing_keywords: zod.array(zod.string()).optional(),
+  source: zod.enum(["linkedin", "indeed"]).optional(),
 });
 export const SearchJobsResponse = zod.array(SearchJobsResponseItem);
 

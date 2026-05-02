@@ -22,6 +22,10 @@ export interface SearchJobsBody {
   apifyToken: string;
   /** Date posted filter */
   datePosted?: '24h' | 'week' | 'any';
+  /** Job source to scrape */
+  source?: 'linkedin' | 'indeed' | 'both';
+  /** Country code for Indeed (us, ca, gb, au, in, de, fr) */
+  country?: string;
 }
 
 export interface JobResult {
@@ -39,6 +43,7 @@ export interface JobResult {
   /** @nullable */
   match_tier?: string | null;
   top_missing_keywords?: string[];
+  source?: 'linkedin' | 'indeed';
 }
 
 export interface ScoreAtsBody {
