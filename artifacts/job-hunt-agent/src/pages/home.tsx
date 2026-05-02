@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Terminal, Search, Loader2, Eye, EyeOff, Bookmark, Trash2, ExternalLink, Sparkles, Download, SearchX, Clock, Globe, AlertCircle, X, History, RotateCcw, MapPin } from "lucide-react";
+import { Terminal, Search, Loader2, Eye, EyeOff, Bookmark, Trash2, ExternalLink, Sparkles, Download, SearchX, Clock, Globe, AlertCircle, X, History, RotateCcw, MapPin, CheckCircle2, XCircle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { ResumeDropzone } from "@/components/ResumeDropzone";
 import { ResultsTable } from "@/components/ResultsTable";
 import { OptimizePanel } from "@/components/OptimizePanel";
 import { useJobSearch, type JobState, type DatePosted } from "@/hooks/use-job-search";
+import { useValidateToken } from "@workspace/api-client-react";
 import { KeywordAnalyzer } from "@/components/KeywordAnalyzer";
 import { ResumeGapAnalyzer } from "@/components/ResumeGapAnalyzer";
 import { CoverLetterPanel } from "@/components/CoverLetterPanel";
@@ -78,6 +79,27 @@ export default function Home() {
 
   const { history, addToHistory, removeFromHistory } = useSearchHistory();
   const { bookmarks, isBookmarked, toggleBookmark, getStatus, setStatus, clearBookmarks } = useBookmarks();
+
+  const validateTokenMutation = useValidateToken();
+  const [tokenStatus, setTokenStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
+  const [tokenInfo, setTokenInfo] = useState<{ username?: string; plan?: string } | null>(null);
+
+  const handleValidateToken = async () => {
+    if (!apifyToken) return;
+    setTokenStatus("checking");
+    setTokenInfo(null);
+    try {
+      const result = await validateTokenMutation.mutateAsync({ data: { apifyToken } });
+      if (result.valid) {
+        setTokenStatus("valid");
+        setTokenInfo({ username: result.username, plan: result.plan });
+      } else {
+        setTokenStatus("invalid");
+      }
+    } catch {
+      setTokenStatus("invalid");
+    }
+  };
 
   const [showToken, setShowToken] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobState | null>(null);
@@ -212,24 +234,62 @@ export default function Home() {
 
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="apifyToken">Apify API Token</Label>
-                    <div className="relative">
-                      <Input
-                        id="apifyToken"
-                        type={showToken ? "text" : "password"}
-                        placeholder="apify_api_..."
-                        value={apifyToken}
-                        onChange={(e) => setApifyToken(e.target.value)}
-                        className="bg-background font-mono text-sm pr-10"
-                      />
-                      <button
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Input
+                          id="apifyToken"
+                          type={showToken ? "text" : "password"}
+                          placeholder="apify_api_..."
+                          value={apifyToken}
+                          onChange={(e) => { setApifyToken(e.target.value); setTokenStatus("idle"); setTokenInfo(null); }}
+                          className="bg-background font-mono text-sm pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowToken(!showToken)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      <Button
                         type="button"
-                        onClick={() => setShowToken(!showToken)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        variant="outline"
+                        size="default"
+                        disabled={!apifyToken || tokenStatus === "checking"}
+                        onClick={handleValidateToken}
+                        className={
+                          tokenStatus === "valid" ? "border-green-500/50 text-green-500 hover:text-green-400" :
+                          tokenStatus === "invalid" ? "border-red-500/50 text-red-400 hover:text-red-300" :
+                          ""
+                        }
                       >
-                        {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
+                        {tokenStatus === "checking" ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : tokenStatus === "valid" ? (
+                          <><CheckCircle2 className="h-4 w-4 mr-1.5" /> Valid</>
+                        ) : tokenStatus === "invalid" ? (
+                          <><XCircle className="h-4 w-4 mr-1.5" /> Invalid</>
+                        ) : (
+                          <><ShieldCheck className="h-4 w-4 mr-1.5" /> Validate</>
+                        )}
+                      </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground">Saved locally in your browser.</p>
+                    <p className="text-xs text-muted-foreground">
+                      {tokenStatus === "valid" && tokenInfo?.username ? (
+                        <span className="text-green-500 flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Verified as <span className="font-medium">{tokenInfo.username}</span>
+                          {tokenInfo.plan && <span className="text-green-500/70">· {tokenInfo.plan}</span>}
+                        </span>
+                      ) : tokenStatus === "invalid" ? (
+                        <span className="text-red-400 flex items-center gap-1">
+                          <XCircle className="h-3 w-3" /> Token is invalid or expired — check your Apify console
+                        </span>
+                      ) : (
+                        "Saved locally in your browser."
+                      )}
+                    </p>
                   </div>
                 </div>
               </div>

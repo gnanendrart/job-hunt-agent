@@ -93,3 +93,14 @@ export interface CoverLetterBody {
 export interface CoverLetterResult {
   cover_letter: string;
 }
+
+export interface ValidateTokenBody {
+  apifyToken: string;
+}
+
+export interface ValidateTokenResult {
+  valid: boolean;
+  username?: string;
+  plan?: string;
+  message?: string;
+}

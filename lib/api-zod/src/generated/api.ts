@@ -102,3 +102,17 @@ export const CoverLetterBody = zod.object({
 export const CoverLetterResponse = zod.object({
   cover_letter: zod.string(),
 });
+
+/**
+ * @summary Validate an Apify API token
+ */
+export const ValidateTokenBody = zod.object({
+  apifyToken: zod.string(),
+});
+
+export const ValidateTokenResponse = zod.object({
+  valid: zod.boolean(),
+  username: zod.string().optional(),
+  plan: zod.string().optional(),
+  message: zod.string().optional(),
+});

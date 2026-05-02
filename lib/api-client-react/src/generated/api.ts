@@ -29,6 +29,8 @@ import type {
   ResumeOptimizationResult,
   ScoreAtsBody,
   SearchJobsBody,
+  ValidateTokenBody,
+  ValidateTokenResult,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -521,6 +523,78 @@ export type DraftCoverLetterMutationResult = NonNullable<
 >;
 export type DraftCoverLetterMutationBody = BodyType<CoverLetterBody>;
 export type DraftCoverLetterMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Validate an Apify API token
+ */
+export const getValidateTokenUrl = () => `/api/validate-token`;
+
+export const validateToken = async (
+  body: ValidateTokenBody,
+  options?: RequestInit,
+): Promise<ValidateTokenResult> => {
+  return customFetch<ValidateTokenResult>(getValidateTokenUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(body),
+  });
+};
+
+export const getValidateTokenMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof validateToken>>,
+    TError,
+    { data: BodyType<ValidateTokenBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof validateToken>>,
+  TError,
+  { data: BodyType<ValidateTokenBody> },
+  TContext
+> => {
+  const mutationKey = ["validateToken"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof validateToken>>,
+    { data: BodyType<ValidateTokenBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+    return validateToken(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export const useValidateToken = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof validateToken>>,
+    TError,
+    { data: BodyType<ValidateTokenBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof validateToken>>,
+  TError,
+  { data: BodyType<ValidateTokenBody> },
+  TContext
+> => {
+  return useMutation(getValidateTokenMutationOptions(options));
+};
 
 export const useDraftCoverLetter = <
   TError = ErrorType<ErrorResponse>,

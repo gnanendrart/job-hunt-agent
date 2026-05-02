@@ -6,6 +6,7 @@ import {
   OptimizeResumeBody,
   FetchJobDescriptionBody,
   CoverLetterBody,
+  ValidateTokenBody,
 } from "@workspace/api-zod";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { createReadStream } from "fs";
@@ -304,6 +305,42 @@ router.post("/fetch-jd", async (req, res): Promise<void> => {
   } catch (err) {
     req.log.error({ err }, "Error in fetch-jd");
     res.json({ description: "" });
+  }
+});
+
+router.post("/validate-token", async (req, res): Promise<void> => {
+  const parsed = ValidateTokenBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { apifyToken } = parsed.data;
+
+  try {
+    const response = await fetch("https://api.apify.com/v2/users/me", {
+      headers: { Authorization: `Bearer ${apifyToken}` },
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      res.json({ valid: false, message: "Invalid or expired token" });
+      return;
+    }
+
+    if (!response.ok) {
+      res.json({ valid: false, message: `Apify returned ${response.status}` });
+      return;
+    }
+
+    const data = await response.json() as { username?: string; plan?: { id?: string } };
+    res.json({
+      valid: true,
+      username: data.username,
+      plan: data.plan?.id,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Error in validate-token");
+    res.json({ valid: false, message: "Network error reaching Apify" });
   }
 });
 
