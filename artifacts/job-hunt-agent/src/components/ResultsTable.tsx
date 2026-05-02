@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
-import { ArrowUpDown, ExternalLink, Sparkles, Loader2 } from "lucide-react";
+import { ArrowUpDown, ExternalLink, Sparkles, Loader2, Bookmark, BookmarkCheck } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { JobState } from "@/hooks/use-job-search";
 
 interface ResultsTableProps {
@@ -13,11 +14,13 @@ interface ResultsTableProps {
   onOptimize: (job: JobState) => void;
   onScoreAll: () => void;
   isScoringAll: boolean;
+  isBookmarked: (id: string) => boolean;
+  toggleBookmark: (job: JobState) => void;
 }
 
 type SortField = "title" | "company" | "location" | "ats_score" | "postedAt";
 
-export function ResultsTable({ jobs, onOptimize, onScoreAll, isScoringAll }: ResultsTableProps) {
+export function ResultsTable({ jobs, onOptimize, onScoreAll, isScoringAll, isBookmarked, toggleBookmark }: ResultsTableProps) {
   const [sortField, setSortField] = useState<SortField>("ats_score");
   const [sortDesc, setSortDesc] = useState(true);
   
@@ -26,11 +29,9 @@ export function ResultsTable({ jobs, onOptimize, onScoreAll, isScoringAll }: Res
 
   const filteredJobs = useMemo(() => {
     return jobs.filter(job => {
-      // ExFilter
       if (expFilter !== "All" && job.experienceLevel !== expFilter && job.experienceLevel) {
         return false;
       }
-      // MinScore
       if (minScoreFilter[0] > 0) {
         if (job.ats_score == null || job.ats_score < minScoreFilter[0]) return false;
       }
@@ -65,7 +66,6 @@ export function ResultsTable({ jobs, onOptimize, onScoreAll, isScoringAll }: Res
   };
 
   const scoredCount = jobs.filter(j => j.ats_score != null).length;
-  const scoringProgress = jobs.length > 0 ? (scoredCount / jobs.length) * 100 : 0;
 
   return (
     <div className="space-y-4">
@@ -119,7 +119,8 @@ export function ResultsTable({ jobs, onOptimize, onScoreAll, isScoringAll }: Res
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[300px] cursor-pointer hover:bg-muted/50" onClick={() => handleSort("title")}>
+              <TableHead className="w-8" />
+              <TableHead className="w-[280px] cursor-pointer hover:bg-muted/50" onClick={() => handleSort("title")}>
                 Job Title {sortField === "title" && <ArrowUpDown className="ml-1 inline h-3 w-3" />}
               </TableHead>
               <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("company")}>
@@ -141,14 +142,34 @@ export function ResultsTable({ jobs, onOptimize, onScoreAll, isScoringAll }: Res
           <TableBody>
             {filteredJobs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                   No jobs match your filters.
                 </TableCell>
               </TableRow>
             ) : (
               filteredJobs.map(job => (
-                <TableRow key={job.id}>
-                  <TableCell className="font-medium max-w-[300px] truncate" title={job.title}>{job.title}</TableCell>
+                <TableRow key={job.id} className={isBookmarked(job.id) ? "bg-primary/5" : ""}>
+                  <TableCell className="pr-0">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => toggleBookmark(job)}
+                          className="p-1 rounded hover:bg-muted/60 transition-colors"
+                          aria-label={isBookmarked(job.id) ? "Remove bookmark" : "Bookmark job"}
+                        >
+                          {isBookmarked(job.id) ? (
+                            <BookmarkCheck className="h-4 w-4 text-primary" />
+                          ) : (
+                            <Bookmark className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {isBookmarked(job.id) ? "Remove bookmark" : "Save job"}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell className="font-medium max-w-[280px] truncate" title={job.title}>{job.title}</TableCell>
                   <TableCell>{job.company}</TableCell>
                   <TableCell>{job.location}</TableCell>
                   <TableCell>

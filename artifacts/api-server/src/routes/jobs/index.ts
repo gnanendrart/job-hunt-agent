@@ -99,7 +99,7 @@ router.post("/search-jobs", async (req, res): Promise<void> => {
 
     if (allJobs.length === 0) {
       req.log.info("No jobs from Apify, using cached fallback");
-      const cachedPath = join(__dirname, "../../data/cached-jobs.json");
+      const cachedPath = join(process.cwd(), "src/data/cached-jobs.json");
       const raw = await readFile(cachedPath, "utf-8");
       jobs = JSON.parse(raw);
     } else {
@@ -132,7 +132,7 @@ router.post("/search-jobs", async (req, res): Promise<void> => {
     req.log.error({ err }, "Error in search-jobs");
 
     try {
-      const cachedPath = join(__dirname, "../../data/cached-jobs.json");
+      const cachedPath = join(process.cwd(), "src/data/cached-jobs.json");
       const raw = await readFile(cachedPath, "utf-8");
       const cached = JSON.parse(raw);
       res.json(cached);
