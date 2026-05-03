@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Terminal, Search, Loader2, Eye, EyeOff, Bookmark, Trash2, ExternalLink, Sparkles, Download, SearchX, Clock, Globe, AlertCircle, X, History, RotateCcw, MapPin, CheckCircle2, XCircle, ShieldCheck, Mail } from "lucide-react";
+import { Terminal, Search, Loader2, Eye, EyeOff, Bookmark, Trash2, ExternalLink, Sparkles, Download, SearchX, Clock, Globe, AlertCircle, X, History, RotateCcw, MapPin, CheckCircle2, XCircle, ShieldCheck, Mail, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -136,6 +136,8 @@ export default function Home() {
     if (score >= 42) return "bg-yellow-500/20 text-yellow-500";
     return "bg-red-500/20 text-red-500";
   };
+
+  const [savedView, setSavedView] = useState<"list" | "kanban">("list");
 
   const filteredBookmarks = statusFilter === "all"
     ? bookmarks
@@ -539,6 +541,26 @@ export default function Home() {
               </h2>
               {bookmarks.length > 0 && (
                 <div className="flex items-center gap-2">
+                  <div className="flex items-center rounded-lg border border-border/60 bg-card p-0.5 gap-0.5">
+                    <Button
+                      variant={savedView === "list" ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => setSavedView("list")}
+                      title="List view"
+                    >
+                      <List className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant={savedView === "kanban" ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => setSavedView("kanban")}
+                      title="Kanban view"
+                    >
+                      <LayoutGrid className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"
@@ -609,6 +631,102 @@ export default function Home() {
                 <Button variant="outline" size="sm" onClick={() => setActiveTab("search")}>
                   <Search className="mr-2 h-4 w-4" /> Go to Search
                 </Button>
+              </div>
+            ) : savedView === "kanban" ? (
+              <div className="overflow-x-auto pb-4">
+                <div className="flex gap-4 min-w-max">
+                  {STATUS_ORDER.map((colStatus) => {
+                    const colJobs = bookmarks.filter(j => getStatus(j.id) === colStatus);
+                    const cfg = STATUS_CONFIG[colStatus];
+                    return (
+                      <div key={colStatus} className="w-72 flex flex-col gap-3">
+                        <div className="flex items-center justify-between px-1">
+                          <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full", cfg.color)}>
+                            {cfg.label}
+                          </span>
+                          <span className="text-xs text-muted-foreground font-mono tabular-nums">
+                            {colJobs.length}
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {colJobs.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-border/40 p-5 text-center text-xs text-muted-foreground/60">
+                              No jobs
+                            </div>
+                          ) : colJobs.map(job => (
+                            <div
+                              key={job.id}
+                              className="rounded-xl border border-border/50 bg-card p-3 space-y-2.5 hover:border-primary/40 transition-colors shadow-sm"
+                            >
+                              <div className="flex items-start gap-1.5">
+                                {job.source && (
+                                  <span className={cn(
+                                    "shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded border mt-0.5",
+                                    job.source === "linkedin"
+                                      ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+                                      : "bg-red-500/15 text-red-400 border-red-500/30"
+                                  )}>
+                                    {job.source === "linkedin" ? "LI" : "IN"}
+                                  </span>
+                                )}
+                                <p className="text-sm font-semibold leading-tight line-clamp-2">{job.title}</p>
+                              </div>
+                              <p className="text-xs text-muted-foreground">{job.company}</p>
+                              {job.location && (
+                                <p className="text-xs text-muted-foreground/70 flex items-center gap-1">
+                                  <MapPin className="h-3 w-3 shrink-0" />
+                                  <span className="truncate">{job.location}</span>
+                                </p>
+                              )}
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {job.ats_score != null && (
+                                  <Badge className={cn("text-[10px] px-1.5 py-0", getScoreColor(job.ats_score))} variant="secondary">
+                                    ATS {job.ats_score}
+                                  </Badge>
+                                )}
+                                {job.experienceLevel && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">{job.experienceLevel}</Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-between pt-1.5 border-t border-border/30">
+                                <Select
+                                  value={colStatus}
+                                  onValueChange={(val) => setStatus(job.id, val as ApplicationStatus)}
+                                >
+                                  <SelectTrigger className={cn("h-6 text-[10px] font-semibold border-0 shadow-none w-[112px] rounded-full px-2", cfg.color)}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {STATUS_ORDER.map((s) => (
+                                      <SelectItem key={s} value={s} className="text-xs">
+                                        <span className={cn("font-semibold px-1.5 py-0.5 rounded-full", STATUS_CONFIG[s].color)}>
+                                          {STATUS_CONFIG[s].label}
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <div className="flex gap-0.5">
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" asChild>
+                                    <a href={job.url} target="_blank" rel="noopener noreferrer" title="Open job">
+                                      <ExternalLink className="h-3.5 w-3.5" />
+                                    </a>
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setSelectedJob(job)} title="Optimize resume">
+                                    <Sparkles className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:text-destructive" onClick={() => toggleBookmark(job)} title="Remove">
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             ) : (
               <div className="rounded-xl border bg-card overflow-hidden">
