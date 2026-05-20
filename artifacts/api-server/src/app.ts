@@ -5,6 +5,7 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,10 +35,26 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+
 const frontendDist = path.join(__dirname, "public");
+logger.info(
+  {
+    frontendDist,
+    exists: fs.existsSync(frontendDist),
+    indexExists: fs.existsSync(path.join(frontendDist, "index.html")),
+  },
+  "Static files config",
+);
+
 app.use(express.static(frontendDist));
 app.use((_req, res) => {
-  res.sendFile(path.join(frontendDist, "index.html"));
+  const indexPath = path.join(frontendDist, "index.html");
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      logger.error({ err, indexPath }, "Failed to serve index.html");
+      res.status(404).send("Frontend not found");
+    }
+  });
 });
 
 export default app;
