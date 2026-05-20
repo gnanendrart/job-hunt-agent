@@ -2,8 +2,7 @@
 
 AI-powered job search assistant. Upload your resume, run a search — it scrapes LinkedIn and Indeed, scores every job against your resume, and manages your pipeline end-to-end.
 
-**Live demo:** https://job-hunt-agent--gnantugu.replit.app/
-
+**[job-hunt-agent](https://github.com/gnanendrart/job-hunt-agent)** · [Live demo](https://job-hunt-agent.onrender.com) · React · Vite · Express · Claude API · Apify
 ---
 
 ## What it does
